@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="sl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EasyBite</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" id="theme-color-meta" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="EasyBite">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+  :root{
+    --bg:#fafafa; --card:#ffffff; --text:#1c1c22; --muted:#6b6b74;
+    --border:#e6e6ea; --accent:#FF6B4A; --accent-soft:#fff0ec;
+    --pill:#f0f0f2; --overlay:rgba(20,20,25,.45);
+    --ns-a:#1e8f4e; --ns-b:#7cb342; --ns-c:#f6c344; --ns-d:#f08c2e; --ns-e:#e5484d;
+  }
+  body[data-theme="dark"]{
+    --bg:#121215; --card:#1c1c21; --text:#ececf0; --muted:#9a9aa4;
+    --border:#2c2c33; --accent:#FF7D5C; --accent-soft:#33231e;
+    --pill:#26262c; --overlay:rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:15px; line-height:1.45; transition:background .2s,color .2s;
+  }
+  button{font-family:inherit; cursor:pointer;}
+  header.top{
+    position:sticky; top:0; z-index:50; background:var(--card);
+    border-bottom:1px solid var(--border); padding:8px 16px;
+    display:grid; grid-template-columns:1fr minmax(0,auto) 1fr; align-items:center; gap:10px;
+  }
+  .logo{font-size:20px; font-weight:800; letter-spacing:-.5px; justify-self:start;}
+  .logo b{color:var(--accent); font-weight:800;}
+  .logo-mini{display:none;}
+  .hdr-right{justify-self:end; display:flex; align-items:center; gap:8px;}
+  .grow{flex:1;}
+  nav.tabs{display:flex; gap:4px; background:var(--pill); padding:4px; border-radius:999px; justify-self:center;
+    min-width:0; overflow-x:auto; scrollbar-width:none; -ms-overflow-style:none;}
+  nav.tabs::-webkit-scrollbar{display:none;}
+  nav.tabs button{
+    border:none; background:transparent; color:var(--muted); font-weight:600; white-space:nowrap;
+    padding:7px 12px; border-radius:999px; font-size:14px; position:relative; transition:.15s; flex:none;
+  }
+  nav.tabs button.active{background:var(--accent); color:#fff;}
+  nav.tabs button:hover:not(.active){color:var(--text);}
+  .navbadge{
+    position:absolute; top:-4px; right:-2px; background:var(--accent); color:#fff;
+    font-size:10px; font-weight:700; min-width:16px; height:16px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center; padding:0 4px; border:2px solid var(--card);
+  }
+  nav.tabs button.active .navbadge{background:#fff; color:var(--accent); border-color:var(--accent);}
+  .iconbtn{
+    border:1px solid var(--border); background:var(--card); color:var(--text);
+    border-radius:10px; padding:6px 10px; font-size:16px; line-height:1; transition:.15s; flex:none;
+  }
+  .iconbtn:hover{border-color:var(--accent);}
+  /* header overflow menu */
+  .menuwrap{position:relative; flex:none;}
+  .menu{
+    position:absolute; right:0; top:calc(100% + 6px); background:var(--card);
+    border:1px solid var(--border); border-radius:12px; padding:8px; min-width:150px;
+    display:none; flex-direction:column; gap:8px; z-index:60;
+  }
+  .menu.open{display:flex;}
+  .menu .menuitem{display:flex; align-items:center; gap:8px; border:none; background:transparent;
+    color:var(--text); padding:8px; border-radius:9px; font-size:14px; font-weight:600; text-align:left; width:100%;}
+  .menu .menuitem:hover{background:var(--pill);}
+  .menu-mobileonly{display:none; flex-direction:column; gap:8px; padding-bottom:8px; margin-bottom:2px; border-bottom:1px solid var(--border);}
+  .langtoggle{display:flex; border:1px solid var(--border); border-radius:10px; overflow:hidden;}
+  .langtoggle button{border:none; background:var(--card); color:var(--muted); padding:8px 12px; font-size:13px; font-weight:600; flex:1;}
+  .langtoggle button.active{background:var(--accent); color:#fff;}
+  main{max-width:1000px; margin:0 auto; padding:18px 16px 60px;}
+  h2.viewtitle{margin:0 0 4px; font-size:22px; letter-spacing:-.4px;}
+  .sub{color:var(--muted); margin:0 0 18px; font-size:14px;}
+  .card{background:var(--card); border:1px solid var(--border); border-radius:14px;}
+  /* summary bar */
+  .summary{
+    display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px;
+  }
+  .stat{
+    flex:1; min-width:120px; background:var(--card); border:1px solid var(--border);
+    border-radius:14px; padding:12px 14px;
+  }
+  .stat .k{font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:.4px;}
+  .stat .v{font-size:22px; font-weight:700; margin-top:2px; display:flex; align-items:center; gap:8px;}
+  .btn{
+    border:none; background:var(--accent); color:#fff; font-weight:600;
+    padding:9px 16px; border-radius:10px; font-size:14px; transition:.15s;
+  }
+  .btn:hover{filter:brightness(1.05);}
+  .btn.ghost{background:var(--pill); color:var(--text);}
+  .btn.danger{background:var(--ns-e);}
+  /* nutri badge */
+  .ns{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:24px; height:24px; border-radius:7px; color:#fff; font-weight:700; font-size:13px; flex:none;
+  }
+  .ns-A{background:var(--ns-a);} .ns-B{background:var(--ns-b);}
+  .ns-C{background:var(--ns-c); color:#3a2e00;} .ns-D{background:var(--ns-d);} .ns-E{background:var(--ns-e);}
+  .ns.sm{width:20px; height:20px; font-size:11px; border-radius:6px;}
+  /* month calendar */
+  .calhead{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
+  .calhead .mname{font-weight:700; font-size:18px; letter-spacing:-.3px; min-width:150px;}
+  .calhead .navbtn{width:36px; height:36px; padding:0; font-size:18px; line-height:1;}
+  .calhead .todaybtn{margin-left:auto;}
+  .dowrow{display:grid; grid-template-columns:repeat(7,1fr); gap:6px; margin-bottom:6px;}
+  .dow{text-align:center; font-size:11px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px;}
+  .calgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:6px;}
+  .mcell{
+    border:1px solid var(--border); border-radius:11px; min-height:92px; padding:7px;
+    display:flex; flex-direction:column; gap:3px; background:var(--card); transition:.15s; overflow:hidden;
+  }
+  .mcell.blank{border:none; background:transparent; min-height:0;}
+  .mcell.day{cursor:pointer;}
+  .mcell.day:hover{border-color:var(--accent);}
+  .mcell.empty{border-style:dashed;}
+  .mcell .dnum{font-size:12px; font-weight:700; color:var(--muted); line-height:1;}
+  .mcell.today{border-color:var(--accent);}
+  .mcell.today .dnum{color:var(--accent);}
+  .mcell .ddish{font-size:11px; font-weight:600; line-height:1.15; flex:1; overflow:hidden;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;}
+  .mcell .dfoot{display:flex; justify-content:flex-end;}
+  .mcell.empty .plus{margin:auto; color:var(--muted); font-size:20px; opacity:.5;}
+  .mcell.empty:hover .plus{opacity:1; color:var(--accent);}
+  .mcell[data-draggable]{cursor:grab;}
+  .mcell[data-draggable]:active{cursor:grabbing;}
+  .mcell.past .ddish{text-decoration:line-through;}
+  .mcell.past .ddish, .mcell.past .dfoot{opacity:.45;}
+  .mcell.dragover{border-color:var(--accent); border-style:solid; background:var(--accent-soft);}
+  .mcell.dragging{opacity:.4;}
+  /* pointer-drag ghost (mouse + touch) */
+  .pdrag-ghost{position:fixed; z-index:2000; pointer-events:none; opacity:.92; margin:0 !important;
+    background:var(--card); outline:2px solid var(--accent); border-radius:11px;}
+  body.pdrag-active{user-select:none; -webkit-user-select:none;}
+  /* recipes */
+  .cardgrid{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:12px;}
+  .rtoolbar{display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px;}
+  .iconmini{border:1px solid var(--border); background:var(--card); color:var(--muted); border-radius:9px;
+    width:32px; height:32px; font-size:14px; line-height:1; transition:.15s; flex:none;}
+  .iconmini:hover{border-color:var(--accent); color:var(--accent);}
+  .iconmini.danger:hover{border-color:var(--ns-e); color:var(--ns-e);}
+  .fhint{font-size:11px; color:var(--muted); margin-top:5px; line-height:1.35;}
+  .nspick{display:flex; gap:8px;}
+  .nspick-btn{width:44px; height:38px; border-radius:10px; font-size:16px; font-weight:700; border:2px solid transparent;
+    opacity:.4; cursor:pointer; transition:.12s;}
+  .nspick-btn:hover{opacity:.75;}
+  .nspick-btn.sel{opacity:1; border-color:var(--text); transform:translateY(-1px);}
+  .recipe{padding:14px; display:flex; flex-direction:column; gap:8px; cursor:pointer; transition:.15s;}
+  .recipe:hover{border-color:var(--accent);}
+  .recipe .rtop{display:flex; align-items:flex-start; gap:8px;}
+  .recipe .rname{font-weight:700; font-size:16px; flex:1; line-height:1.2;}
+  .recipe .rmeta{color:var(--muted); font-size:13px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; padding:4px 9px; border-radius:999px; width:fit-content;}
+  .chip.ok{background:rgba(30,143,78,.12); color:var(--ns-a);}
+  .chip.miss{background:rgba(229,72,77,.12); color:var(--ns-e);}
+  body[data-theme="dark"] .chip.ok{background:rgba(124,179,66,.18); color:#9ccf5f;}
+  /* pantry */
+  .catgroup{margin-bottom:18px;}
+  .cathead{display:flex; align-items:center; gap:8px; font-weight:700; margin:0 0 8px; font-size:15px;}
+  .cathead.cat-drag{
+    cursor:grab; padding:8px 10px; border:1px solid var(--border); border-radius:10px;
+    background:var(--card); user-select:none; transition:.12s; border-style:dashed;
+    touch-action:none;   /* let the pointer-drag own the gesture instead of page scroll */
+  }
+  .cathead.cat-drag:hover{border-color:var(--accent); color:var(--accent);}
+  .cathead.cat-drag:active{cursor:grabbing;}
+  .cathead.cat-drag.dragging{opacity:.4;}
+  .cathead.cat-drag.dragover{border-color:var(--accent); border-style:solid; background:var(--accent-soft);}
+  .cathead .draghandle{color:var(--muted); font-size:16px; line-height:1; letter-spacing:-2px; cursor:grab;}
+  .cathead.cat-drag:hover .draghandle{color:var(--accent);}
+  .prow{
+    display:flex; align-items:center; gap:10px; padding:10px 12px;
+    border:1px solid var(--border); border-radius:12px; margin-bottom:6px; background:var(--card);
+  }
+  .prow .pname{flex:1; font-weight:500;}
+  .prow .pqty{color:var(--muted); font-size:14px; min-width:70px; text-align:right;}
+  .stepper{display:flex; gap:6px;}
+  .stepper button{
+    width:32px; height:32px; border-radius:9px; border:1px solid var(--border);
+    background:var(--card); color:var(--text); font-size:18px; line-height:1; font-weight:600;
+  }
+  .stepper button:hover{border-color:var(--accent); color:var(--accent);}
+  /* shopping */
+  .progressbar{flex:1; height:6px; background:var(--pill); border-radius:999px; overflow:hidden; min-width:40px;}
+  .progressfill{height:100%; background:var(--accent); border-radius:999px; transition:width .3s;}
+  .progresslabel{font-size:12px; color:var(--muted); font-weight:600; flex:none;}
+  .sitem{
+    display:flex; align-items:center; gap:12px; padding:11px 12px;
+    border:1px solid var(--border); border-radius:12px; margin-bottom:6px; background:var(--card); transition:.15s;
+  }
+  .sitem .sname{flex:1;}
+  .sitem .sqty{color:var(--muted); font-size:14px;}
+  .sitem.done{opacity:.55;}
+  .sitem.done .sname{text-decoration:line-through;}
+  .check{
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--border);
+    display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer; transition:.15s;
+    background:var(--card); color:transparent; font-size:15px; font-weight:700;
+  }
+  .check:hover{border-color:var(--accent);}
+  .check.on{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .shoptools{display:flex; gap:10px; align-items:center; margin-bottom:14px;}
+  .shoptools select.store{flex:none;}
+  select.store, select.sel{
+    border:1px solid var(--border); background:var(--card); color:var(--text);
+    border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit;
+  }
+  .empty{color:var(--muted); text-align:center; padding:40px 20px;}
+  /* modal */
+  #overlay{position:fixed; inset:0; background:var(--overlay); display:none; align-items:flex-start; justify-content:center; z-index:100; padding:24px 16px; overflow-y:auto;}
+  #overlay.on{display:flex;}
+  .modal{
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    width:100%; max-width:460px; padding:20px; margin:auto;
+  }
+  .modal h3{margin:0 0 14px; font-size:19px; display:flex; align-items:center; gap:10px;}
+  .modal h3 .grow{flex:1;}
+  .field{margin-bottom:12px;}
+  .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:5px; font-weight:600;}
+  .field input, .field select{
+    width:100%; border:1px solid var(--border); background:var(--bg); color:var(--text);
+    border-radius:10px; padding:9px 11px; font-size:14px; font-family:inherit;
+  }
+  .irow{display:flex; gap:6px; align-items:center; margin-bottom:6px;}
+  .irow select{flex:1;}
+  .irow input{width:70px; flex:none;}
+  .irow .unit{font-size:13px; color:var(--muted); min-width:34px;}
+  .irow .rm{border:none; background:transparent; color:var(--ns-e); font-size:18px; padding:2px 6px;}
+  .modalfoot{display:flex; gap:8px; margin-top:16px;}
+  .modalfoot .grow{flex:1;}
+  .rlist{display:flex; flex-direction:column; gap:6px; max-height:60vh; overflow-y:auto;}
+  .rlist .ritem{
+    display:flex; align-items:center; gap:10px; padding:11px; border:1px solid var(--border);
+    border-radius:11px; cursor:pointer; transition:.15s; background:var(--card);
+  }
+  .rlist .ritem:hover{border-color:var(--accent);}
+  .rlist .ritem .rn{flex:1; font-weight:600;}
+  .linkbtn{border:none; background:transparent; color:var(--accent); font-weight:600; font-size:14px; padding:6px 0;}
+  .bigtext{width:100%; min-height:120px; max-height:230px; border:1px solid var(--border); background:var(--bg);
+    color:var(--text); border-radius:10px; padding:10px; font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:12px; line-height:1.4; resize:vertical; box-sizing:border-box;}
+  @media(max-width:560px){
+    .calgrid{gap:3px;} .dowrow{gap:3px;}
+    .mcell{min-height:64px; padding:4px; border-radius:8px;}
+    .mcell .ddish{font-size:9px; -webkit-line-clamp:2;}
+    .mcell .dnum{font-size:11px;}
+    .calhead .mname{font-size:16px; min-width:0;}
+    nav.tabs button{padding:7px 10px; font-size:13px;}
+    .logo-full{display:none;}
+    .logo-mini{display:inline;}
+    #langtoggle{display:none;}
+    #themebtn{display:none;}
+    .menu-mobileonly{display:flex;}
+  }
+</style>
+</head>
+<body data-theme="light">
+<header class="top">
+  <div class="logo"><span class="logo-full">Easy<b>Bite</b></span><span class="logo-mini">E<b>B</b></span></div>
+  <nav class="tabs" id="tabs"></nav>
+  <div class="hdr-right">
+    <div class="langtoggle" id="langtoggle"></div>
+    <button class="iconbtn" data-action="theme" id="themebtn" aria-label="Theme">🌙</button>
+    <div class="menuwrap">
+      <button class="iconbtn" data-action="menu" id="menubtn" aria-label="Menu">⋯</button>
+      <div class="menu" id="menu"></div>
+    </div>
+  </div>
+</header>
+<main id="app"></main>
+<div id="overlay"></div>
+
+<script>
+"use strict";
+
+/* ------------------------------------------------------------------ */
+/* Static catalog                                                     */
+/* ------------------------------------------------------------------ */
+const CATS = [
+  {id:"vegetables", emoji:"🥦", en:"Vegetables",       sl:"Zelenjava"},
+  {id:"fruit",      emoji:"🍎", en:"Fruit",            sl:"Sadje"},
+  {id:"dairy",      emoji:"🧀", en:"Dairy",            sl:"Mlečni izdelki"},
+  {id:"meat",       emoji:"🍖", en:"Meat & fish",      sl:"Meso in ribe"},
+  {id:"grains",     emoji:"🌾", en:"Grains & pasta",   sl:"Žita in testenine"},
+  {id:"pantry",     emoji:"🫙", en:"Staples",          sl:"Osnovna živila"},
+  {id:"sweets",     emoji:"🍫", en:"Sweets & snacks",  sl:"Sladkarije in prigrizki"},
+  {id:"drinks",     emoji:"🥤", en:"Drinks",           sl:"Pijače"},
+];
+const CAT_ORDER = CATS.map(c=>c.id);
+
+const UNITS = {
+  pcs:{en:"pcs", sl:"kos"},
+  g:  {en:"g",   sl:"g"},
+  ml: {en:"ml",  sl:"ml"},
+  can:{en:"can", sl:"konz."},
+};
+
+// Ingredient catalog: id -> {name{en,sl}, cat, unit, g (grams per unit), ns}
+const ING = {
+  tomato:      {name:{en:"Tomatoes",     sl:"Paradižnik"},           cat:"vegetables", unit:"pcs", g:120, ns:"A"},
+  onion:       {name:{en:"Onion",        sl:"Čebula"},               cat:"vegetables", unit:"pcs", g:110, ns:"A"},
+  bellpepper:  {name:{en:"Bell pepper",  sl:"Paprika"},              cat:"vegetables", unit:"pcs", g:150, ns:"A"},
+  broccoli:    {name:{en:"Broccoli",     sl:"Brokoli"},              cat:"vegetables", unit:"g",   g:1,   ns:"A"},
+  carrot:      {name:{en:"Carrot",       sl:"Korenje"},              cat:"vegetables", unit:"pcs", g:70,  ns:"A"},
+
+  banana:      {name:{en:"Banana",       sl:"Banana"},               cat:"fruit",      unit:"pcs", g:120, ns:"A"},
+  apple:       {name:{en:"Apple",        sl:"Jabolko"},              cat:"fruit",      unit:"pcs", g:150, ns:"A"},
+  lemon:       {name:{en:"Lemon",        sl:"Limona"},               cat:"fruit",      unit:"pcs", g:60,  ns:"A"},
+
+  milk:        {name:{en:"Milk",         sl:"Mleko"},                cat:"dairy",      unit:"ml",  g:1,   ns:"B"},
+  mozzarella:  {name:{en:"Mozzarella",   sl:"Mocarela"},             cat:"dairy",      unit:"g",   g:1,   ns:"C"},
+  yogurt:      {name:{en:"Yogurt",       sl:"Jogurt"},               cat:"dairy",      unit:"g",   g:1,   ns:"B"},
+  butter:      {name:{en:"Butter",       sl:"Maslo"},                cat:"dairy",      unit:"g",   g:1,   ns:"D"},
+
+  mincedbeef:  {name:{en:"Minced beef",  sl:"Mleto goveje meso"},    cat:"meat",       unit:"g",   g:1,   ns:"D"},
+  chicken:     {name:{en:"Chicken breast", sl:"Piščančje prsi"},     cat:"meat",       unit:"g",   g:1,   ns:"B"},
+  salmon:      {name:{en:"Salmon",       sl:"Losos"},                cat:"meat",       unit:"g",   g:1,   ns:"B"},
+
+  spaghetti:   {name:{en:"Spaghetti",    sl:"Špageti"},              cat:"grains",     unit:"g",   g:1,   ns:"C"},
+  rice:        {name:{en:"Rice",         sl:"Riž"},                  cat:"grains",     unit:"g",   g:1,   ns:"C"},
+  oats:        {name:{en:"Oats",         sl:"Ovseni kosmiči"},       cat:"grains",     unit:"g",   g:1,   ns:"A"},
+  bread:       {name:{en:"Bread",        sl:"Kruh"},                 cat:"grains",     unit:"pcs", g:40,  ns:"C"},
+
+  oliveoil:    {name:{en:"Olive oil",    sl:"Oljčno olje"},          cat:"pantry",     unit:"ml",  g:1,   ns:"C"},
+  tomatosauce: {name:{en:"Tomato sauce", sl:"Paradižnikova omaka"},  cat:"pantry",     unit:"can", g:400, ns:"B"},
+  salt:        {name:{en:"Salt",         sl:"Sol"},                  cat:"pantry",     unit:"g",   g:1,   ns:"E"},
+
+  honey:       {name:{en:"Honey",        sl:"Med"},                  cat:"sweets",     unit:"g",   g:1,   ns:"D"},
+  darkchoc:    {name:{en:"Dark chocolate", sl:"Temna čokolada"},     cat:"sweets",     unit:"g",   g:1,   ns:"D"},
+
+  orangejuice: {name:{en:"Orange juice", sl:"Pomarančni sok"},       cat:"drinks",     unit:"ml",  g:1,   ns:"D"},
+  water:       {name:{en:"Sparkling water", sl:"Mineralna voda"},    cat:"drinks",     unit:"ml",  g:1,   ns:"A"},
+};
+const BUILTIN_ING = Object.assign({}, ING);   // pristine seed catalog, used to rebuild ING on load/import
+
+const DAYS = [
+  {id:"Mon", en:"Mon", sl:"Pon"}, {id:"Tue", en:"Tue", sl:"Tor"},
+  {id:"Wed", en:"Wed", sl:"Sre"}, {id:"Thu", en:"Thu", sl:"Čet"},
+  {id:"Fri", en:"Fri", sl:"Pet"}, {id:"Sat", en:"Sat", sl:"Sob"},
+  {id:"Sun", en:"Sun", sl:"Ned"},
+];
+const MONTHS = {
+  en:["January","February","March","April","May","June","July","August","September","October","November","December"],
+  sl:["januar","februar","marec","april","maj","junij","julij","avgust","september","oktober","november","december"],
+};
+
+/* ------------------------------------------------------------------ */
+/* Translations                                                        */
+/* ------------------------------------------------------------------ */
+const T = {
+  en:{
+    week:"Plan", recipes:"Recipes", kitchen:"Ingredients", shopping:"Shopping", theme:"Theme",
+    weekTitle:"Monthly plan", weekSub:"One lunch per day — the shopping list follows.",
+    weekScore:"Month score", plannedMeals:"Planned lunches", toBuy:"To buy", goToList:"Go to list",
+    lunch:"Lunch", today:"Today",
+    recipesTitle:"Recipes", recipesSub:"Your dishes and what's in stock.",
+    kitchenTitle:"Ingredients", kitchenSub:"Your ingredients and what you have in stock.",
+    shoppingTitle:"Shopping list", shoppingSub:"Tick items as you buy — they land in the kitchen.",
+    newRecipe:"New recipe", editRecipe:"Edit recipe", chooseRecipe:"Choose a recipe",
+    clearSlot:"Clear this slot", cancel:"Cancel", save:"Save", del:"Delete",
+    name:"Name", servings:"Servings", ingredients:"Ingredients", addIngredient:"+ Add ingredient",
+    allInKitchen:"✓ all in kitchen",
+    servingsShort:"servings", ingsShort:"ingredients",
+    store:"Store", finishTrip:"Finish trip", addItem:"+ Add item", quantity:"Quantity", ingredient:"Ingredient",
+    progress:"bought", of:"of",
+    tip:"↕ Drag the category headers to match this store's aisle order — it's saved per store.",
+    emptyList:"Nothing to buy — your kitchen has it all covered. 🎉",
+    noRecipes:"No recipes yet.", pickIngredient:"Pick an ingredient",
+    confirmDelPlan:"", missing:"missing",
+    newIngredient:"+ New ingredient", editIngredient:"Edit ingredient",
+    category:"Category", unit:"Unit", gramsPerUnit:"Grams per unit",
+    gramsHint:"Approx. weight of one unit — used to weight the Nutri-Score.",
+    nutriScore:"Nutri-Score", quantityAtHome:"Quantity at home",
+    autoScore:"🔎 Auto-suggest score", searching:"Searching Open Food Facts…",
+    matched:"Matched", noMatch:"No match on Open Food Facts — pick manually.",
+    lookupFail:"Lookup failed — check your connection.",
+    deleteIngTitle:"Delete ingredient?", deleteIngWarn:"Removes it from the catalog, your kitchen, and any recipe that uses it.",
+    exportData:"Export data", importData:"Import data",
+    exportTitle:"Export backup", importTitle:"Import backup",
+    exportHint:"Copy this text or download the file, then import it on your other device.",
+    importHint:"Paste a backup or choose a file, then Restore. This replaces all data on this device.",
+    importPlaceholder:"Paste backup text here…", importBad:"That doesn't look like a valid EasyBite backup.",
+    downloadFile:"Download file", copy:"Copy", copied:"Copied!", done:"Done", restore:"Restore",
+    cloudSync:"Cloud sync", syncTitle:"Cloud sync",
+    syncSetupHint:"Paste your free Firebase project config to sync automatically across devices. Setup steps are in the notes below the app.",
+    syncConfigPlaceholder:"Paste firebaseConfig { … } here",
+    connect:"Connect", syncEmail:"Email", syncPassword:"Password",
+    signIn:"Sign in", createAccount:"Create account", signOut:"Sign out", disconnect:"Disconnect",
+    syncSignedInAs:"Signed in as",
+    syncConnecting:"Connecting…", syncSigningIn:"Signing in…", syncSynced:"✓ Synced", syncSyncing:"Syncing…",
+    syncError:"Sync error — will retry.", syncBadConfig:"That config didn't parse. Paste the whole firebaseConfig object.",
+    syncAuthError:"Couldn't sign in — check the email and password.",
+    syncMergeTitle:"Cloud data found", syncMergeHint:"This account already has saved data. Which copy do you want to keep?",
+    syncUseCloud:"Use cloud data", syncUploadLocal:"Upload this device",
+  },
+  sl:{
+    week:"Načrt", recipes:"Recepti", kitchen:"Sestavine", shopping:"Nakup", theme:"Videz",
+    weekTitle:"Mesečni načrt", weekSub:"En obrok na dan — nakupovalni seznam sledi.",
+    weekScore:"Ocena meseca", plannedMeals:"Načrtovana kosila", toBuy:"Za nakup", goToList:"Na seznam",
+    lunch:"Kosilo", today:"Danes",
+    recipesTitle:"Recepti", recipesSub:"Tvoje jedi in kaj imaš doma.",
+    kitchenTitle:"Sestavine", kitchenSub:"Tvoje sestavine in kaj imaš doma.",
+    shoppingTitle:"Nakupovalni seznam", shoppingSub:"Odkljukaj kar kupiš — pristane v kuhinji.",
+    newRecipe:"Nov recept", editRecipe:"Uredi recept", chooseRecipe:"Izberi recept",
+    clearSlot:"Odstrani obrok", cancel:"Prekliči", save:"Shrani", del:"Izbriši",
+    name:"Ime", servings:"Porcije", ingredients:"Sestavine", addIngredient:"+ Dodaj sestavino",
+    allInKitchen:"✓ vse doma",
+    servingsShort:"porcij", ingsShort:"sestavin",
+    store:"Trgovina", finishTrip:"Zaključi nakup", addItem:"+ Dodaj izdelek", quantity:"Količina", ingredient:"Sestavina",
+    progress:"kupljeno", of:"od",
+    tip:"↕ Povleci naslove kategorij, da se ujemajo z razporedom te trgovine — shrani se za vsako trgovino posebej.",
+    emptyList:"Nič za kupiti — kuhinja ima vse. 🎉",
+    noRecipes:"Zaenkrat ni receptov.", pickIngredient:"Izberi sestavino",
+    confirmDelPlan:"", missing:"manjka",
+    newIngredient:"+ Nova sestavina", editIngredient:"Uredi sestavino",
+    category:"Kategorija", unit:"Enota", gramsPerUnit:"Gramov na enoto",
+    gramsHint:"Približna teža ene enote — za utež Nutri-ocene.",
+    nutriScore:"Nutri-ocena", quantityAtHome:"Količina doma",
+    autoScore:"🔎 Predlagaj oceno", searching:"Iščem po Open Food Facts…",
+    matched:"Ujemanje", noMatch:"Ni zadetka na Open Food Facts — izberi ročno.",
+    lookupFail:"Iskanje ni uspelo — preveri povezavo.",
+    deleteIngTitle:"Izbriši sestavino?", deleteIngWarn:"Odstrani jo iz kataloga, kuhinje in vseh receptov, ki jo uporabljajo.",
+    exportData:"Izvozi podatke", importData:"Uvozi podatke",
+    exportTitle:"Izvoz varnostne kopije", importTitle:"Uvoz varnostne kopije",
+    exportHint:"Kopiraj to besedilo ali prenesi datoteko, nato jo uvozi na drugi napravi.",
+    importHint:"Prilepi kopijo ali izberi datoteko, nato Obnovi. To zamenja vse podatke na tej napravi.",
+    importPlaceholder:"Sem prilepi besedilo varnostne kopije…", importBad:"To ni videti kot veljavna EasyBite kopija.",
+    downloadFile:"Prenesi datoteko", copy:"Kopiraj", copied:"Kopirano!", done:"Končano", restore:"Obnovi",
+    cloudSync:"Sinhronizacija", syncTitle:"Sinhronizacija v oblak",
+    syncSetupHint:"Prilepi konfiguracijo brezplačnega Firebase projekta za samodejno sinhronizacijo med napravami. Navodila so v opombah pod aplikacijo.",
+    syncConfigPlaceholder:"Sem prilepi firebaseConfig { … }",
+    connect:"Poveži", syncEmail:"E-pošta", syncPassword:"Geslo",
+    signIn:"Prijava", createAccount:"Ustvari račun", signOut:"Odjava", disconnect:"Prekini povezavo",
+    syncSignedInAs:"Prijavljen kot",
+    syncConnecting:"Povezovanje…", syncSigningIn:"Prijavljanje…", syncSynced:"✓ Sinhronizirano", syncSyncing:"Sinhroniziram…",
+    syncError:"Napaka sinhronizacije — poskusim znova.", syncBadConfig:"Konfiguracije ni bilo mogoče prebrati. Prilepi celoten firebaseConfig.",
+    syncAuthError:"Prijava ni uspela — preveri e-pošto in geslo.",
+    syncMergeTitle:"Najdeni podatki v oblaku", syncMergeHint:"Ta račun že ima shranjene podatke. Katero kopijo želiš obdržati?",
+    syncUseCloud:"Uporabi oblak", syncUploadLocal:"Naloži to napravo",
+  },
+};
+
+/* ------------------------------------------------------------------ */
+/* Seed / default state                                                */
+/* ------------------------------------------------------------------ */
+function currentMonthStr(){ const t=new Date(); return t.getFullYear()+"-"+String(t.getMonth()+1).padStart(2,"0"); }
+
+function defaultState(){
+  const M = currentMonthStr();
+  return {
+    view:"month", lang:"sl", theme:"light", month:M,
+    recipes:[
+      {id:"r1", name:{en:"Spaghetti Bolognese", sl:"Špageti po bolonjsko"}, servings:4,
+        items:[{ing:"spaghetti",q:400},{ing:"mincedbeef",q:400},{ing:"tomatosauce",q:1},{ing:"onion",q:1},{ing:"oliveoil",q:20}]},
+      {id:"r2", name:{en:"Salmon & Rice Bowl", sl:"Losos z rižem"}, servings:2,
+        items:[{ing:"salmon",q:300},{ing:"rice",q:200},{ing:"broccoli",q:200},{ing:"lemon",q:1}]},
+      {id:"r3", name:{en:"Banana Oat Breakfast", sl:"Ovseni zajtrk z banano"}, servings:2,
+        items:[{ing:"oats",q:100},{ing:"milk",q:300},{ing:"banana",q:2},{ing:"honey",q:20}]},
+      {id:"r4", name:{en:"Caprese Salad", sl:"Solata caprese"}, servings:2,
+        items:[{ing:"tomato",q:3},{ing:"mozzarella",q:200},{ing:"oliveoil",q:20}]},
+      {id:"r5", name:{en:"Chicken Stir-fry", sl:"Piščanec z zelenjavo iz voka"}, servings:3,
+        items:[{ing:"chicken",q:400},{ing:"bellpepper",q:2},{ing:"carrot",q:2},{ing:"rice",q:200},{ing:"oliveoil",q:20}]},
+    ],
+    plan:{
+      [M+"-03"]:"r1", [M+"-04"]:"r3", [M+"-05"]:"r2", [M+"-07"]:"r5",
+      [M+"-10"]:"r4", [M+"-11"]:"r1", [M+"-14"]:"r2", [M+"-18"]:"r5", [M+"-24"]:"r3",
+    },
+    pantry:{ rice:300, oliveoil:500, onion:3, salt:200, milk:500, banana:2, tomato:2, oats:200 },
+    manual:[],
+    ticked:{},
+    stores:[
+      {id:"s1", name:"Spar Center", order:["vegetables","fruit","dairy","meat","grains","pantry","sweets","drinks"]},
+      {id:"s2", name:"Lidl Vič",   order:["drinks","sweets","pantry","grains","meat","dairy","fruit","vegetables"]},
+    ],
+    storeId:"s1",
+    customIng:{},   // user-added ingredients, merged into the catalog at load
+    hiddenIng:[],   // built-in ingredient ids the user deleted (removed from catalog at load)
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/* Persistence                                                         */
+/* ------------------------------------------------------------------ */
+const LS_KEY = "easybite.v3";
+let state = load();
+let menuOpen = false;   // header overflow menu (language + theme); not persisted
+// --- cloud sync runtime (see sync block below); all null/false unless the user opts in ---
+let fbAuth = null, fbDb = null, syncUser = null, syncUnsub = null;
+let pushTimer = null, applyingRemote = false, syncStatus = "off";
+let syncModalOpen = false, justSignedIn = false, pendingRemoteJson = null;
+const DEVICE_ID = (function(){ try{ let d=localStorage.getItem("easybite.device"); if(!d){ d=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem("easybite.device", d); } return d; }catch(e){ return "dev"+Math.random(); } })();
+rebuildCatalog();   // ING = built-in seed + user's custom ingredients − deleted built-ins
+
+// Rebuild the runtime catalog from the pristine seed plus the current state.
+function rebuildCatalog(){
+  for(const k of Object.keys(ING)) delete ING[k];
+  Object.assign(ING, BUILTIN_ING, state.customIng || {});
+  (state.hiddenIng || []).forEach(id=>{ delete ING[id]; });
+}
+
+function load(){
+  try{
+    const raw = localStorage.getItem(LS_KEY);
+    if(raw){
+      const parsed = JSON.parse(raw);
+      return Object.assign(defaultState(), parsed);
+    }
+  }catch(e){ /* ignore */ }
+  return defaultState();
+}
+function save(){
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* ignore */ }
+  syncSchedulePush();   // no-op unless cloud sync is active
+}
+
+/* ------------------------------------------------------------------ */
+/* Helpers                                                             */
+/* ------------------------------------------------------------------ */
+const tr = k => T[state.lang][k];
+const nameOf = obj => obj ? (obj[state.lang] || obj.en) : "";
+const catMeta = id => CATS.find(c=>c.id===id);
+const catLabel = id => { const c=catMeta(id); return c ? c[state.lang] : id; };
+const unitLabel = u => (UNITS[u] ? UNITS[u][state.lang] : u);
+const recipeById = id => state.recipes.find(r=>r.id===id);
+const activeStore = () => state.stores.find(s=>s.id===state.storeId) || state.stores[0];
+
+function fmtQty(q){
+  const r = Math.round(q*100)/100;
+  return Number.isInteger(r) ? String(r) : String(r);
+}
+function qtyUnit(ingId, q){ return fmtQty(q) + " " + unitLabel(ING[ingId].unit); }
+
+const NS_VAL = {A:100,B:75,C:50,D:25,E:0};
+function valueToLetter(v){ return v>=80?"A":v>=60?"B":v>=40?"C":v>=20?"D":"E"; }
+function recipeValue(recipe){
+  let w=0, acc=0;
+  recipe.items.forEach(it=>{
+    const ing = ING[it.ing]; if(!ing) return;
+    const weight = it.q * (ing.g||1);
+    w += weight; acc += weight * NS_VAL[ing.ns];
+  });
+  return w===0 ? null : acc/w;
+}
+function recipeLetter(recipe){ const v=recipeValue(recipe); return v===null?null:valueToLetter(v); }
+function badge(letter, sm){
+  if(!letter) return "";
+  return `<span class="ns${sm?" sm":""} ns-${letter}">${letter}</span>`;
+}
+
+function escapeHtml(s){
+  return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+}
+
+/* ------------------------------------------------------------------ */
+/* Shopping computation                                                */
+/* ------------------------------------------------------------------ */
+function neededMap(){
+  const need = {};
+  const today = todayKey();
+  Object.keys(state.plan).forEach(key=>{
+    if(key < today) return;                       // past lunches: eaten already, not shopped for
+    const r = recipeById(state.plan[key]); if(!r) return;
+    r.items.forEach(it=>{ need[it.ing] = (need[it.ing]||0) + it.q; });
+  });
+  state.manual.forEach(m=>{ need[m.ing] = (need[m.ing]||0) + m.q; });
+  return need;
+}
+function shoppingItems(){
+  const need = neededMap();
+  const items = [];
+  Object.keys(need).forEach(ing=>{
+    if(!ING[ing]) return;
+    const remaining = need[ing] - (state.pantry[ing]||0) + (state.ticked[ing]||0);
+    if(remaining > 0.0001) items.push({ing, q:remaining, ticked: !!state.ticked[ing]});
+  });
+  return items;
+}
+function unticketedCount(){ return shoppingItems().filter(i=>!i.ticked).length; }
+
+/* ------------------------------------------------------------------ */
+/* Actions                                                             */
+/* ------------------------------------------------------------------ */
+function setView(v){
+  // leaving the shopping list ends the trip: bought (ticked) items are already in the
+  // pantry, so clear them — next visit shows only what's still needed.
+  if(state.view==="shopping" && v!=="shopping") state.ticked={};
+  state.view=v; closeModal(); save(); render();
+}
+
+function tickItem(ing){
+  const items = shoppingItems();
+  const found = items.find(i=>i.ing===ing);
+  if(!found || found.ticked) return;
+  state.ticked[ing] = found.q;
+  state.pantry[ing] = (state.pantry[ing]||0) + found.q;
+  save(); render();
+}
+function untickItem(ing){
+  const qty = state.ticked[ing]; if(qty===undefined) return;
+  state.pantry[ing] = Math.max(0, (state.pantry[ing]||0) - qty);
+  delete state.ticked[ing];
+  save(); render();
+}
+function reorderCategory(fromCat, toCat){
+  if(fromCat===toCat) return;
+  const store = activeStore();
+  let ord = (store.order||[]).slice();
+  CAT_ORDER.forEach(c=>{ if(!ord.includes(c)) ord.push(c); }); // safety: keep all cats present
+  ord.splice(ord.indexOf(fromCat), 1);
+  ord.splice(ord.indexOf(toCat), 0, fromCat);                  // drop before the target
+  store.order = ord;
+  save(); render();
+}
+function pantryStep(ing, dir){
+  const step = (ING[ing].unit==="g"||ING[ing].unit==="ml") ? 50 : 1;
+  state.pantry[ing] = Math.max(0, (state.pantry[ing]||0) + dir*step);
+  save(); render();
+}
+function assignSlot(slot, recipeId){
+  if(recipeId) state.plan[slot]=recipeId; else delete state.plan[slot];
+  closeModal(); save(); render();
+}
+function moveMeal(fromKey, toKey){
+  if(fromKey===toKey) return;
+  const a = state.plan[fromKey]; if(!a) return;
+  const b = state.plan[toKey];
+  if(b){ state.plan[fromKey]=b; state.plan[toKey]=a; }   // swap two days
+  else { delete state.plan[fromKey]; state.plan[toKey]=a; } // move to empty day
+  save(); render();
+}
+
+/* ------------------------------------------------------------------ */
+/* Header                                                              */
+/* ------------------------------------------------------------------ */
+function renderHeader(){
+  const tabs = [
+    {v:"month", label:tr("week")},
+    {v:"recipes", label:tr("recipes")},
+    {v:"kitchen", label:tr("kitchen")},
+    {v:"shopping", label:tr("shopping")},
+  ];
+  const badgeN = unticketedCount();
+  document.getElementById("tabs").innerHTML = tabs.map(t=>{
+    const b = (t.v==="shopping" && badgeN>0) ? `<span class="navbadge">${badgeN}</span>` : "";
+    return `<button class="${state.view===t.v?"active":""}" data-action="view" data-view="${t.v}">${t.label}${b}</button>`;
+  }).join("");
+  const langHTML = ["en","sl"].map(l=>`<button class="${state.lang===l?"active":""}" data-action="lang" data-lang="${l}">${l==="en"?"EN":"SLO"}</button>`).join("");
+  document.getElementById("langtoggle").innerHTML = langHTML;                       // inline controls (desktop)
+  document.getElementById("themebtn").textContent = state.theme==="dark" ? "☀️" : "🌙";
+  const menu = document.getElementById("menu");
+  menu.innerHTML = `
+    <div class="menu-mobileonly">
+      <div class="langtoggle">${langHTML}</div>
+      <button class="menuitem" data-action="theme">${state.theme==="dark"?"☀️":"🌙"} ${tr("theme")}</button>
+    </div>
+    <button class="menuitem" data-action="export">⬇️ ${tr("exportData")}</button>
+    <button class="menuitem" data-action="import">⬆️ ${tr("importData")}</button>
+    <button class="menuitem" data-action="sync">☁️ ${tr("cloudSync")}${syncActive() ? ` <span style="color:var(--ns-a);font-weight:700;">•</span>` : ""}</button>`;
+  menu.classList.toggle("open", menuOpen);
+}
+
+/* ------------------------------------------------------------------ */
+/* Views                                                               */
+/* ------------------------------------------------------------------ */
+function monthParts(){ const [y,m]=state.month.split("-").map(Number); return {y, m:m-1}; }
+function pad2(n){ return String(n).padStart(2,"0"); }
+function dateKey(y,m,d){ return y+"-"+pad2(m+1)+"-"+pad2(d); }
+function todayKey(){ const t=new Date(); return dateKey(t.getFullYear(), t.getMonth(), t.getDate()); }
+function shiftMonth(delta){
+  let {y,m}=monthParts(); m+=delta;
+  if(m<0){m=11;y--;} if(m>11){m=0;y++;}
+  state.month=y+"-"+pad2(m+1); save(); render();
+}
+
+function renderMonth(){
+  const {y,m}=monthParts();
+  const prefix = y+"-"+pad2(m+1)+"-";
+  const today = todayKey();
+  const monthKeys = Object.keys(state.plan).filter(k=>k.startsWith(prefix) && recipeById(state.plan[k]));
+  const values = monthKeys.map(k=>recipeValue(recipeById(state.plan[k]))).filter(v=>v!==null);
+  const monthLetter = values.length ? valueToLetter(values.reduce((a,b)=>a+b,0)/values.length) : null;
+  const planned = monthKeys.filter(k=>k>=today).length;   // upcoming lunches only
+  const toBuy = unticketedCount();
+
+  const summary = `
+    <div class="summary">
+      <div class="stat"><div class="k">${tr("weekScore")}</div><div class="v">${monthLetter?badge(monthLetter):"–"}</div></div>
+      <div class="stat"><div class="k">${tr("plannedMeals")}</div><div class="v">${planned}</div></div>
+      <div class="stat"><div class="k">${tr("toBuy")}</div><div class="v">${toBuy}</div></div>
+      <div class="stat" style="display:flex;align-items:center;justify-content:center;">
+        <button class="btn" data-action="view" data-view="shopping">${tr("goToList")} →</button>
+      </div>
+    </div>`;
+
+  const calHead = `<div class="calhead">
+    <button class="iconbtn navbtn" data-action="month-prev">‹</button>
+    <div class="mname">${MONTHS[state.lang][m]} ${y}</div>
+    <button class="iconbtn navbtn" data-action="month-next">›</button>
+    <button class="btn ghost todaybtn" data-action="month-today">${tr("today")}</button>
+  </div>`;
+
+  const dowRow = `<div class="dowrow">${DAYS.map(d=>`<div class="dow">${d[state.lang]}</div>`).join("")}</div>`;
+
+  const startDow = (new Date(y,m,1).getDay()+6)%7;   // Monday-first offset
+  const daysIn = new Date(y,m+1,0).getDate();
+  let cells = "";
+  for(let i=0;i<startDow;i++) cells += `<div class="mcell blank"></div>`;
+  for(let d=1; d<=daysIn; d++){
+    const key = dateKey(y,m,d);
+    const rid = state.plan[key];
+    const r = rid ? recipeById(rid) : null;
+    const todayCls = key===today ? " today" : "";
+    const pastCls = key<today ? " past" : "";
+    if(r){
+      cells += `<div class="mcell day${todayCls}${pastCls}" data-draggable="1" data-action="slot" data-slot="${key}">
+        <div class="dnum">${d}</div>
+        <div class="ddish">${escapeHtml(nameOf(r.name))}</div>
+        <div class="dfoot">${badge(recipeLetter(r), true)}</div>
+      </div>`;
+    }else{
+      cells += `<div class="mcell day empty${todayCls}" data-action="slot" data-slot="${key}">
+        <div class="dnum">${d}</div><div class="plus">+</div>
+      </div>`;
+    }
+  }
+
+  return `<h2 class="viewtitle">${tr("weekTitle")}</h2><p class="sub">${tr("weekSub")}</p>
+    ${summary}${calHead}${dowRow}<div class="calgrid">${cells}</div>`;
+}
+
+function renderRecipes(){
+  const cards = state.recipes.map(r=>{
+    let missing = 0;
+    r.items.forEach(it=>{ if((state.pantry[it.ing]||0) < it.q) missing++; });
+    const chip = missing===0
+      ? `<span class="chip ok">${tr("allInKitchen")}</span>`
+      : `<span class="chip miss">${missing} ${tr("missing")}</span>`;
+    return `<div class="card recipe" data-action="edit-recipe" data-id="${r.id}">
+      <div class="rtop"><div class="rname">${escapeHtml(nameOf(r.name))}</div>${badge(recipeLetter(r))}</div>
+      <div class="rmeta">${r.items.length} ${tr("ingsShort")} · ${r.servings} ${tr("servingsShort")}</div>
+      ${chip}
+    </div>`;
+  }).join("");
+  return `<h2 class="viewtitle">${tr("recipesTitle")}</h2><p class="sub">${tr("recipesSub")}</p>
+    <div class="rtoolbar"><button class="btn" data-action="new-recipe">${tr("newRecipe")}</button></div>
+    ${state.recipes.length?`<div class="cardgrid">${cards}</div>`:`<div class="empty">${tr("noRecipes")}</div>`}`;
+}
+
+function renderKitchen(){
+  const groups = CATS.map(cat=>{
+    const ings = Object.keys(ING).filter(id=>ING[id].cat===cat.id);
+    if(!ings.length) return "";
+    const rows = ings.map(id=>{
+      const ing = ING[id]; const qty = state.pantry[id]||0;
+      const edit = ing.custom
+        ? `<button class="iconmini" data-action="edit-ingredient" data-ing="${id}" title="${tr("editIngredient")}">✎</button>`
+        : "";
+      return `<div class="prow">
+        ${badge(ing.ns, true)}
+        <div class="pname">${escapeHtml(nameOf(ing.name))}</div>
+        <div class="pqty">${qtyUnit(id, qty)}</div>
+        ${edit}
+        <button class="iconmini danger" data-action="ask-del-ingredient" data-ing="${id}" title="${tr("del")}">✕</button>
+        <div class="stepper">
+          <button data-action="pantry" data-ing="${id}" data-dir="-1">−</button>
+          <button data-action="pantry" data-ing="${id}" data-dir="1">+</button>
+        </div>
+      </div>`;
+    }).join("");
+    return `<div class="catgroup"><div class="cathead">${cat.emoji} ${cat[state.lang]}</div>${rows}</div>`;
+  }).join("");
+  return `<h2 class="viewtitle">${tr("kitchenTitle")}</h2><p class="sub">${tr("kitchenSub")}</p>
+    <div class="rtoolbar"><button class="btn" data-action="new-ingredient">${tr("newIngredient")}</button></div>
+    ${groups}`;
+}
+
+function renderShopping(){
+  const items = shoppingItems();
+  const store = activeStore();
+  const total = items.length;
+  const done = items.filter(i=>i.ticked).length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  const storeSel = `<select class="store" data-action="store">
+    ${state.stores.map(s=>`<option value="${s.id}" ${s.id===state.storeId?"selected":""}>${escapeHtml(s.name)}</option>`).join("")}
+  </select>`;
+
+  if(!total){
+    return `<div class="shoptools">${storeSel}</div><div class="empty">${tr("emptyList")}</div>`;
+  }
+
+  // store selector + progress bar share one compact row
+  const tools = `<div class="shoptools">
+    ${storeSel}
+    <div class="progressbar"><div class="progressfill" style="width:${pct}%;"></div></div>
+    <span class="progresslabel">${done}/${total}</span>
+  </div>`;
+
+  // group by category
+  const groups = {};
+  items.forEach(it=>{ const c=ING[it.ing].cat; (groups[c]=groups[c]||[]).push(it); });
+  const rank = c => { const i=(store.order||[]).indexOf(c); return i<0 ? 999 : i; };
+  const cats = Object.keys(groups).sort((a,b)=>{
+    const ra=rank(a), rb=rank(b);
+    return ra===rb ? catLabel(a).localeCompare(catLabel(b)) : ra-rb;
+  });
+
+  const body = cats.map(cat=>{
+    const meta = catMeta(cat);
+    const list = groups[cat].slice().sort((a,b)=> (a.ticked===b.ticked)?0:(a.ticked?1:-1));
+    const rows = list.map(it=>{
+      const ing = ING[it.ing];
+      return `<div class="sitem ${it.ticked?"done":""}">
+        <div class="check ${it.ticked?"on":""}" data-action="${it.ticked?"untick":"tick"}" data-ing="${it.ing}">✓</div>
+        ${badge(ing.ns, true)}
+        <div class="sname">${escapeHtml(nameOf(ing.name))}</div>
+        <div class="sqty">${qtyUnit(it.ing, it.q)}</div>
+      </div>`;
+    }).join("");
+    return `<div class="catgroup" data-cat="${cat}">
+      <div class="cathead cat-drag" data-cat="${cat}">
+        <span class="draghandle" aria-hidden="true">⠿</span>${meta.emoji} ${meta[state.lang]}
+      </div>${rows}</div>`;
+  }).join("");
+
+  return `${tools}${body}`;
+}
+
+/* ------------------------------------------------------------------ */
+/* Modals                                                              */
+/* ------------------------------------------------------------------ */
+const overlay = document.getElementById("overlay");
+function openModal(html){ overlay.innerHTML = `<div class="modal">${html}</div>`; overlay.classList.add("on"); }
+function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; syncModalOpen=false; }
+
+function openSlotModal(slot){
+  const rows = state.recipes.map(r=>
+    `<div class="ritem" data-action="assign" data-slot="${slot}" data-recipe="${r.id}">
+      ${badge(recipeLetter(r), true)}<div class="rn">${escapeHtml(nameOf(r.name))}</div>
+    </div>`).join("");
+  const current = state.plan[slot];
+  const clear = current ? `<button class="linkbtn" data-action="assign" data-slot="${slot}" data-recipe="">✕ ${tr("clearSlot")}</button>` : "";
+  openModal(`<h3>${tr("chooseRecipe")}</h3><div class="rlist">${rows}</div>
+    <div class="modalfoot"><div class="grow">${clear}</div>
+    <button class="btn ghost" data-action="close">${tr("cancel")}</button></div>`);
+}
+
+/* Recipe editor uses a temp `editing` object */
+let editing = null;
+function openRecipeModal(id){
+  const r = id ? recipeById(id) : null;
+  editing = r
+    ? {id:r.id, name:nameOf(r.name), servings:r.servings, items:r.items.map(it=>({ing:it.ing,q:it.q}))}
+    : {id:null, name:"", servings:2, items:[{ing:Object.keys(ING)[0], q:1}]};
+  renderRecipeModal();
+}
+function captureRecipeForm(){
+  if(!editing) return;
+  const m = overlay;
+  editing.name = m.querySelector("#rc-name").value;
+  editing.servings = Math.max(1, parseInt(m.querySelector("#rc-serv").value)||1);
+  const rows = m.querySelectorAll(".irow");
+  editing.items = Array.from(rows).map(row=>({
+    ing: row.querySelector("select").value,
+    q: parseFloat(row.querySelector("input").value)||0,
+  }));
+}
+function renderRecipeModal(){
+  const opts = ing => CATS.map(cat=>{
+    const list = Object.keys(ING).filter(id=>ING[id].cat===cat.id);
+    return `<optgroup label="${cat.emoji} ${cat[state.lang]}">`+
+      list.map(id=>`<option value="${id}" ${id===ing?"selected":""}>${escapeHtml(nameOf(ING[id].name))}</option>`).join("")+
+      `</optgroup>`;
+  }).join("");
+  const rows = editing.items.map((it,i)=>`
+    <div class="irow" data-i="${i}">
+      <select>${opts(it.ing)}</select>
+      <input type="number" min="0" step="any" value="${it.q}">
+      <span class="unit">${unitLabel(ING[it.ing].unit)}</span>
+      <button class="rm" data-action="rm-ing" data-i="${i}">✕</button>
+    </div>`).join("");
+  // live score from current editing items
+  const liveLetter = recipeLetter({items:editing.items});
+  const delBtn = editing.id ? `<button class="btn danger" data-action="del-recipe" data-id="${editing.id}">${tr("del")}</button>` : "";
+  openModal(`
+    <h3>${badge(liveLetter)}<span class="grow">${editing.id?tr("editRecipe"):tr("newRecipe")}</span></h3>
+    <div class="field"><label>${tr("name")}</label><input id="rc-name" type="text" value="${escapeHtml(editing.name)}"></div>
+    <div class="field"><label>${tr("servings")}</label><input id="rc-serv" type="number" min="1" value="${editing.servings}"></div>
+    <div class="field"><label>${tr("ingredients")}</label>${rows}
+      <button class="linkbtn" data-action="add-ing">${tr("addIngredient")}</button></div>
+    <div class="modalfoot">${delBtn}<div class="grow"></div>
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+      <button class="btn" data-action="save-recipe">${tr("save")}</button>
+    </div>`);
+}
+function saveRecipe(){
+  captureRecipeForm();
+  const name = editing.name.trim() || (state.lang==="sl"?"Recept":"Recipe");
+  const items = editing.items.filter(it=>it.q>0);
+  if(editing.id){
+    const r = recipeById(editing.id);
+    r.name = {en:name, sl:name}; r.servings=editing.servings; r.items=items;
+  }else{
+    const id = "r"+Date.now();
+    state.recipes.push({id, name:{en:name, sl:name}, servings:editing.servings, items});
+  }
+  closeModal(); save(); render();
+}
+function deleteRecipe(id){
+  state.recipes = state.recipes.filter(r=>r.id!==id);
+  Object.keys(state.plan).forEach(k=>{ if(state.plan[k]===id) delete state.plan[k]; });
+  closeModal(); save(); render();
+}
+
+function openManualModal(){
+  const opts = CATS.map(cat=>{
+    const list = Object.keys(ING).filter(id=>ING[id].cat===cat.id);
+    return `<optgroup label="${cat.emoji} ${cat[state.lang]}">`+
+      list.map(id=>`<option value="${id}">${escapeHtml(nameOf(ING[id].name))}</option>`).join("")+`</optgroup>`;
+  }).join("");
+  openModal(`<h3>${tr("addItem")}</h3>
+    <div class="field"><label>${tr("ingredient")}</label><select id="mi-ing">${opts}</select></div>
+    <div class="field"><label>${tr("quantity")}</label><input id="mi-q" type="number" min="0" step="any" value="1"></div>
+    <div class="modalfoot"><div class="grow"></div>
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+      <button class="btn" data-action="save-manual">${tr("save")}</button></div>`);
+}
+function saveManual(){
+  const ing = overlay.querySelector("#mi-ing").value;
+  const q = parseFloat(overlay.querySelector("#mi-q").value)||0;
+  if(q>0){
+    const ex = state.manual.find(m=>m.ing===ing);
+    if(ex) ex.q += q; else state.manual.push({ing, q});
+  }
+  closeModal(); save(); render();
+}
+
+/* Ingredient add/edit (Kitchen) — manual Nutri-Score */
+let editingIng = null;
+function defaultG(unit){ return unit==="pcs" ? 100 : unit==="can" ? 400 : 1; }
+function openIngredientModal(id){
+  if(id && ING[id]){
+    const ing = ING[id];
+    editingIng = {id, name:nameOf(ing.name), cat:ing.cat, unit:ing.unit, g:ing.g, ns:ing.ns, qty:0};
+  }else{
+    editingIng = {id:null, name:"", cat:CAT_ORDER[0], unit:"g", g:1, ns:"C", qty:0};
+  }
+  renderIngredientModal();
+}
+function captureIngredientForm(){
+  if(!editingIng) return;
+  const q = s=>overlay.querySelector(s);
+  if(q("#ing-name")) editingIng.name = q("#ing-name").value;
+  if(q("#ing-cat"))  editingIng.cat  = q("#ing-cat").value;
+  if(q("#ing-unit")) editingIng.unit = q("#ing-unit").value;
+  if(editingIng.unit==="g" || editingIng.unit==="ml") editingIng.g = 1;
+  else if(q("#ing-g")) editingIng.g = parseFloat(q("#ing-g").value) || defaultG(editingIng.unit);
+  if(q("#ing-qty")) editingIng.qty = parseFloat(q("#ing-qty").value) || 0;
+}
+function renderIngredientModal(){
+  const catOpts = CATS.map(c=>`<option value="${c.id}" ${c.id===editingIng.cat?"selected":""}>${c.emoji} ${c[state.lang]}</option>`).join("");
+  const unitOpts = ["pcs","g","ml","can"].map(u=>`<option value="${u}" ${u===editingIng.unit?"selected":""}>${unitLabel(u)}</option>`).join("");
+  const showG = editingIng.unit!=="g" && editingIng.unit!=="ml";
+  const gField = showG ? `<div class="field"><label>${tr("gramsPerUnit")}</label>
+    <input id="ing-g" type="number" min="1" step="any" value="${editingIng.g}">
+    <div class="fhint">${tr("gramsHint")}</div></div>` : "";
+  const nsPick = `<div class="field"><label>${tr("nutriScore")}</label><div class="nspick">
+    ${["A","B","C","D","E"].map(L=>`<button type="button" class="ns ns-${L} nspick-btn${editingIng.ns===L?" sel":""}" data-action="pick-ns" data-ns="${L}">${L}</button>`).join("")}
+  </div>
+    <button type="button" class="linkbtn" data-action="auto-score" ${editingIng.nsBusy?"disabled":""}>${tr("autoScore")}</button>
+    ${editingIng.nsStatus?`<div class="fhint">${escapeHtml(editingIng.nsStatus)}</div>`:""}
+  </div>`;
+  const qtyField = editingIng.id ? "" : `<div class="field"><label>${tr("quantityAtHome")}</label>
+    <input id="ing-qty" type="number" min="0" step="any" value="${editingIng.qty}"></div>`;
+  const delBtn = editingIng.id ? `<button class="btn danger" data-action="ask-del-ingredient" data-ing="${editingIng.id}">${tr("del")}</button>` : "";
+  openModal(`
+    <h3>${badge(editingIng.ns)}<span class="grow">${editingIng.id?tr("editIngredient"):tr("newIngredient").replace(/^\+ /,"")}</span></h3>
+    <div class="field"><label>${tr("name")}</label><input id="ing-name" type="text" value="${escapeHtml(editingIng.name)}"></div>
+    <div class="field"><label>${tr("category")}</label><select id="ing-cat">${catOpts}</select></div>
+    <div class="field"><label>${tr("unit")}</label><select id="ing-unit">${unitOpts}</select></div>
+    ${gField}${nsPick}${qtyField}
+    <div class="modalfoot">${delBtn}<div class="grow"></div>
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+      <button class="btn" data-action="save-ingredient">${tr("save")}</button></div>`);
+}
+async function autoScoreLookup(){
+  captureIngredientForm();
+  const name = (editingIng.name||"").trim();
+  if(!name){ const el=overlay.querySelector("#ing-name"); if(el){ el.style.borderColor="var(--ns-e)"; el.focus(); } return; }
+  editingIng.nsBusy = true; editingIng.nsStatus = tr("searching"); renderIngredientModal();
+  const target = editingIng;   // guard against modal being closed/replaced mid-request
+  try{
+    const ctrl = new AbortController();
+    const timer = setTimeout(()=>ctrl.abort(), 8000);
+    const url = "https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(name)
+      +"&json=1&page_size=10&fields=product_name,nutriscore_grade";
+    const res = await fetch(url, {signal:ctrl.signal});
+    clearTimeout(timer);
+    const data = await res.json();
+    const prod = (data.products||[]).find(p=>/^[a-e]$/.test((p.nutriscore_grade||"").toLowerCase()));
+    if(editingIng!==target) return;   // user moved on
+    if(prod){
+      editingIng.ns = prod.nutriscore_grade.toUpperCase();
+      editingIng.nsStatus = tr("matched")+": "+(prod.product_name||name)+" → "+editingIng.ns;
+    }else{
+      editingIng.nsStatus = tr("noMatch");
+    }
+  }catch(e){
+    if(editingIng===target) editingIng.nsStatus = tr("lookupFail");
+  }
+  if(editingIng===target){ editingIng.nsBusy = false; renderIngredientModal(); }
+}
+function saveIngredient(){
+  captureIngredientForm();
+  const name = (editingIng.name||"").trim();
+  if(!name){ const el=overlay.querySelector("#ing-name"); if(el){ el.style.borderColor="var(--ns-e)"; el.focus(); } return; }
+  const g = editingIng.g>0 ? editingIng.g : defaultG(editingIng.unit);
+  const ns = editingIng.ns || "C";
+  if(editingIng.id){
+    const ing = ING[editingIng.id];
+    ing.name = {en:name, sl:name}; ing.cat = editingIng.cat; ing.unit = editingIng.unit; ing.g = g; ing.ns = ns;
+    state.customIng[editingIng.id] = ing;
+  }else{
+    const id = "c"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
+    const ing = {name:{en:name, sl:name}, cat:editingIng.cat, unit:editingIng.unit, g, ns, custom:true};
+    ING[id] = ing; state.customIng[id] = ing;
+    if(editingIng.qty>0) state.pantry[id] = editingIng.qty;
+  }
+  editingIng = null; closeModal(); save(); render();
+}
+function confirmDeleteIngredient(id){
+  const ing = ING[id]; if(!ing) return;
+  openModal(`<h3>${tr("deleteIngTitle")}</h3>
+    <p class="sub" style="margin:0 0 4px;">${badge(ing.ns, true)} ${escapeHtml(nameOf(ing.name))}</p>
+    <p class="fhint" style="margin:0 0 2px;">${tr("deleteIngWarn")}</p>
+    <div class="modalfoot"><div class="grow"></div>
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+      <button class="btn danger" data-action="del-ingredient" data-ing="${id}">${tr("del")}</button>
+    </div>`);
+}
+function deleteIngredient(id){
+  if(!ING[id]) return;
+  const wasCustom = ING[id].custom;
+  delete ING[id];
+  if(wasCustom) delete state.customIng[id];
+  else { if(!state.hiddenIng.includes(id)) state.hiddenIng.push(id); }   // built-in: remember it's gone
+  delete state.pantry[id]; delete state.ticked[id];
+  state.manual = state.manual.filter(m=>m.ing!==id);
+  state.recipes.forEach(r=>{ r.items = r.items.filter(it=>it.ing!==id); });
+  editingIng = null; closeModal(); save(); render();
+}
+
+/* ------------------------------------------------------------------ */
+/* Backup & restore (move data between devices, no account)            */
+/* ------------------------------------------------------------------ */
+function openExportModal(){
+  menuOpen = false;
+  const json = JSON.stringify(state);
+  openModal(`<h3>${tr("exportTitle")}</h3>
+    <p class="fhint" style="margin:0 0 10px;">${tr("exportHint")}</p>
+    <textarea id="exp-txt" class="bigtext" readonly onclick="this.select()">${escapeHtml(json)}</textarea>
+    <div class="modalfoot">
+      <button class="btn ghost" data-action="download-backup">${tr("downloadFile")}</button>
+      <div class="grow"></div>
+      <button class="btn ghost" data-action="copy-export">${tr("copy")}</button>
+      <button class="btn" data-action="close">${tr("done")}</button>
+    </div>`);
+}
+function downloadBackup(){
+  const json = JSON.stringify(state, null, 2);
+  const blob = new Blob([json], {type:"application/json"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "easybite-backup-" + new Date().toISOString().slice(0,10) + ".json";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function copyExport(btn){
+  const ta = overlay.querySelector("#exp-txt"); if(!ta) return;
+  const done = ()=>{ if(btn){ btn.textContent = tr("copied"); setTimeout(()=>{ btn.textContent = tr("copy"); }, 1500); } };
+  if(navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(ta.value).then(done, ()=>{ ta.select(); document.execCommand("copy"); done(); }); }
+  else { ta.select(); document.execCommand("copy"); done(); }
+}
+function openImportModal(){
+  menuOpen = false;
+  openModal(`<h3>${tr("importTitle")}</h3>
+    <p class="fhint" style="margin:0 0 10px;">${tr("importHint")}</p>
+    <input type="file" id="imp-file" accept="application/json,.json" style="margin-bottom:10px; font-size:13px;">
+    <textarea id="imp-txt" class="bigtext" placeholder="${tr("importPlaceholder")}"></textarea>
+    <div id="imp-err" class="fhint" style="color:var(--ns-e); min-height:16px;"></div>
+    <div class="modalfoot"><div class="grow"></div>
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+      <button class="btn danger" data-action="do-import">${tr("restore")}</button>
+    </div>`);
+}
+function doImport(){
+  const ta = overlay.querySelector("#imp-txt");
+  const err = overlay.querySelector("#imp-err");
+  const txt = (ta ? ta.value : "").trim();
+  const fail = () => { if(err) err.textContent = tr("importBad"); if(ta) ta.style.borderColor = "var(--ns-e)"; };
+  if(!txt) return fail();
+  let data;
+  try{ data = JSON.parse(txt); }catch(e){ return fail(); }
+  if(!data || typeof data!=="object" || !Array.isArray(data.recipes) || typeof data.plan!=="object"){ return fail(); }
+  state = Object.assign(defaultState(), data);
+  rebuildCatalog();               // reconstruct the catalog for this imported data
+  menuOpen = false; closeModal(); save(); render();
+}
+
+/* ------------------------------------------------------------------ */
+/* Cloud sync (optional, Firebase). Off until the user pastes config.  */
+/* ------------------------------------------------------------------ */
+const SYNC_KEY = "easybite.sync";
+function getSyncConfig(){ try{ const r=localStorage.getItem(SYNC_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function setSyncConfig(c){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(c)); }catch(e){} }
+function clearSyncConfig(){ try{ localStorage.removeItem(SYNC_KEY); }catch(e){} }
+function syncActive(){ return !!(fbDb && syncUser); }
+function syncDocRef(){ return fbDb.collection("easybite").doc(syncUser.uid); }
+function stopSnapshot(){ if(syncUnsub){ try{ syncUnsub(); }catch(e){} syncUnsub=null; } }
+function setSyncStatus(s){ syncStatus=s; renderSyncIfOpen(); }
+
+function parseFirebaseConfig(text){
+  const s = String(text||"").trim();
+  const a = s.indexOf("{"), b = s.lastIndexOf("}");
+  if(a<0 || b<0) return null;
+  const obj = s.slice(a, b+1);
+  try{ return JSON.parse(obj); }catch(e){}
+  try{ return Function("return ("+obj+")")(); }catch(e){}   // tolerate JS object-literal syntax
+  return null;
+}
+function loadScript(src){ return new Promise((res,rej)=>{ const el=document.createElement("script"); el.src=src; el.onload=()=>res(); el.onerror=()=>rej(new Error("load "+src)); document.head.appendChild(el); }); }
+function loadFirebase(){
+  if(window.firebase && window.firebase.firestore) return Promise.resolve();
+  const base = "https://www.gstatic.com/firebasejs/10.12.2/";
+  return loadScript(base+"firebase-app-compat.js")
+    .then(()=>loadScript(base+"firebase-auth-compat.js"))
+    .then(()=>loadScript(base+"firebase-firestore-compat.js"));
+}
+async function syncInit(){
+  const cfg = getSyncConfig(); if(!cfg) return;
+  await loadFirebase();
+  if(!firebase.apps.length) firebase.initializeApp(cfg);
+  fbAuth = firebase.auth(); fbDb = firebase.firestore();
+  if(!syncInit._bound){
+    syncInit._bound = true;
+    fbAuth.onAuthStateChanged(function(u){
+      syncUser = u || null;
+      if(syncUser){ syncStart(); } else { stopSnapshot(); setSyncStatus("signedout"); }
+      renderSyncIfOpen(); renderHeader();
+    });
+  }
+}
+async function syncConnect(text){
+  const cfg = parseFirebaseConfig(text);
+  if(!cfg || !cfg.apiKey || !cfg.projectId){ setSyncStatus("badconfig"); return; }
+  setSyncConfig(cfg);
+  setSyncStatus("connecting");
+  try{ await syncInit(); renderSyncIfOpen(); }
+  catch(e){ setSyncStatus("error"); }
+}
+async function syncAuth(email, pw, isNew){
+  if(!email || !pw){ setSyncStatus("autherror"); return; }
+  if(!fbAuth){ try{ await syncInit(); }catch(e){ setSyncStatus("error"); return; } }
+  if(!fbAuth){ setSyncStatus("error"); return; }
+  setSyncStatus("signingin"); justSignedIn = true;
+  try{
+    if(isNew) await fbAuth.createUserWithEmailAndPassword(email, pw);
+    else await fbAuth.signInWithEmailAndPassword(email, pw);
+  }catch(e){ justSignedIn=false; setSyncStatus("autherror"); }
+}
+async function syncStart(){
+  if(!syncActive()) return;
+  const ref = syncDocRef();
+  setSyncStatus("connecting");
+  let snap; try{ snap = await ref.get(); }catch(e){ setSyncStatus("error"); return; }
+  const remote = snap.exists && snap.data() ? snap.data() : null;
+  const hasRemote = !!(remote && remote.json);
+  if(hasRemote && justSignedIn){        // first sign-in with existing cloud data → let the user pick
+    justSignedIn = false;
+    pendingRemoteJson = remote.json;
+    openSyncMergeModal();
+    return;
+  }
+  justSignedIn = false;
+  if(hasRemote) applyRemote(remote.json);   // reconnect: cloud is source of truth
+  else pushNow();                           // brand-new account: seed cloud from this device
+  subscribe(ref);
+  setSyncStatus("synced");
+}
+function subscribe(ref){
+  stopSnapshot();
+  syncUnsub = ref.onSnapshot(function(snap){
+    if(!snap.exists) return;
+    if(snap.metadata && snap.metadata.hasPendingWrites) return;   // our own not-yet-committed write
+    const d = snap.data(); if(!d || !d.json) return;
+    if(d.updatedBy === DEVICE_ID){ setSyncStatus("synced"); return; }  // our own change echoed back
+    applyRemote(d.json);                                          // change from another device
+    setSyncStatus("synced");
+  }, function(){ setSyncStatus("error"); });
+}
+function pushNow(){
+  if(!syncActive()) return;
+  setSyncStatus("syncing");
+  syncDocRef().set({ json: JSON.stringify(state), updatedBy: DEVICE_ID, updatedAt: Date.now() })
+    .then(function(){ setSyncStatus("synced"); })
+    .catch(function(){ setSyncStatus("error"); });
+}
+function syncSchedulePush(){
+  if(!syncActive() || applyingRemote) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(pushNow, 800);   // debounce bursts of changes
+}
+function applyRemote(jsonStr){
+  let data; try{ data = JSON.parse(jsonStr); }catch(e){ return; }
+  if(!data || typeof data!=="object" || !Array.isArray(data.recipes)) return;
+  applyingRemote = true;
+  state = Object.assign(defaultState(), data);
+  rebuildCatalog();
+  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
+  applyingRemote = false;
+  render();
+}
+async function syncSignOut(){
+  stopSnapshot();
+  try{ if(fbAuth) await fbAuth.signOut(); }catch(e){}
+  syncUser = null; setSyncStatus("signedout"); renderSyncIfOpen(); renderHeader();
+}
+async function syncDisconnect(){
+  await syncSignOut();
+  clearSyncConfig(); fbAuth=null; fbDb=null;
+  setSyncStatus("off"); renderSyncIfOpen(); renderHeader();
+}
+
+/* Sync modals */
+function openSyncModal(){ menuOpen=false; syncModalOpen=true; if(getSyncConfig() && !fbAuth){ syncInit().catch(()=>setSyncStatus("error")); } renderSyncModal(); }
+function renderSyncIfOpen(){ if(syncModalOpen) renderSyncModal(); }
+function syncStatusText(){
+  const m = {connecting:tr("syncConnecting"), signingin:tr("syncSigningIn"), synced:tr("syncSynced"),
+    syncing:tr("syncSyncing"), error:tr("syncError"), badconfig:tr("syncBadConfig"), autherror:tr("syncAuthError")};
+  return m[syncStatus] || "";
+}
+function renderSyncModal(){
+  const cfg = getSyncConfig();
+  const status = syncStatusText();
+  const statusHTML = status ? `<div class="fhint" style="margin:8px 0 0;">${escapeHtml(status)}</div>` : "";
+  let body;
+  if(!cfg){
+    body = `<p class="fhint" style="margin:0 0 10px;">${tr("syncSetupHint")}</p>
+      <textarea id="sync-config" class="bigtext" placeholder="${tr("syncConfigPlaceholder")}"></textarea>
+      ${statusHTML}
+      <div class="modalfoot"><div class="grow"></div>
+        <button class="btn ghost" data-action="close">${tr("cancel")}</button>
+        <button class="btn" data-action="sync-connect">${tr("connect")}</button></div>`;
+  } else if(!syncUser){
+    body = `<div class="field"><label>${tr("syncEmail")}</label><input id="sync-email" type="email" autocomplete="username"></div>
+      <div class="field"><label>${tr("syncPassword")}</label><input id="sync-pass" type="password" autocomplete="current-password"></div>
+      ${statusHTML}
+      <div class="modalfoot">
+        <button class="btn ghost" data-action="sync-disconnect" title="${tr("disconnect")}">${tr("disconnect")}</button>
+        <div class="grow"></div>
+        <button class="btn ghost" data-action="sync-signup">${tr("createAccount")}</button>
+        <button class="btn" data-action="sync-signin">${tr("signIn")}</button></div>`;
+  } else {
+    body = `<p class="sub" style="margin:0 0 4px;">${tr("syncSignedInAs")}</p>
+      <p style="margin:0 0 4px; font-weight:600;">${escapeHtml(syncUser.email||"")}</p>
+      ${statusHTML || `<div class="fhint" style="margin:8px 0 0;">${tr("syncSynced")}</div>`}
+      <div class="modalfoot">
+        <button class="btn ghost" data-action="sync-disconnect">${tr("disconnect")}</button>
+        <div class="grow"></div>
+        <button class="btn" data-action="sync-signout">${tr("signOut")}</button></div>`;
+  }
+  openModal(`<h3>☁️ ${tr("syncTitle")}</h3>${body}`);
+}
+function openSyncMergeModal(){
+  openModal(`<h3>${tr("syncMergeTitle")}</h3>
+    <p class="fhint" style="margin:0 0 12px;">${tr("syncMergeHint")}</p>
+    <div class="modalfoot">
+      <button class="btn ghost" data-action="sync-upload-local">${tr("syncUploadLocal")}</button>
+      <div class="grow"></div>
+      <button class="btn" data-action="sync-use-cloud">${tr("syncUseCloud")}</button></div>`);
+}
+function syncMergeChoose(useCloud){
+  const ref = syncDocRef();
+  if(useCloud && pendingRemoteJson) applyRemote(pendingRemoteJson);
+  else pushNow();
+  pendingRemoteJson = null;
+  subscribe(ref);
+  setSyncStatus("synced");
+  closeModal();
+  if(syncModalOpen) renderSyncModal();
+}
+
+/* ------------------------------------------------------------------ */
+/* Root render                                                         */
+/* ------------------------------------------------------------------ */
+function render(){
+  document.documentElement.lang = state.lang;
+  document.body.setAttribute("data-theme", state.theme);
+  const tcm = document.getElementById("theme-color-meta");
+  if(tcm) tcm.content = state.theme==="dark" ? "#1c1c21" : "#ffffff";
+  renderHeader();
+  const app = document.getElementById("app");
+  if(state.view==="month") app.innerHTML = renderMonth();
+  else if(state.view==="recipes") app.innerHTML = renderRecipes();
+  else if(state.view==="kitchen") app.innerHTML = renderKitchen();
+  else if(state.view==="shopping") app.innerHTML = renderShopping();
+}
+
+/* ------------------------------------------------------------------ */
+/* Event delegation                                                    */
+/* ------------------------------------------------------------------ */
+document.addEventListener("click", e=>{
+  if(Date.now()-lastDragEnd < 350) return;   // ignore the click fired right after a drag drop
+  // close the header overflow menu on any click outside it
+  if(menuOpen && !e.target.closest(".menuwrap")){
+    menuOpen=false; const m=document.getElementById("menu"); if(m) m.classList.remove("open");
+  }
+  const el = e.target.closest("[data-action]");
+  if(!el) return;
+  const a = el.dataset.action;
+  switch(a){
+    case "view": setView(el.dataset.view); break;
+    case "menu": menuOpen=!menuOpen; document.getElementById("menu").classList.toggle("open", menuOpen); break;
+    case "lang": menuOpen=false; state.lang=el.dataset.lang; save(); render(); break;
+    case "theme": menuOpen=false; state.theme = state.theme==="dark"?"light":"dark"; save(); render(); break;
+    case "month-prev": shiftMonth(-1); break;
+    case "month-next": shiftMonth(1); break;
+    case "month-today": state.month=currentMonthStr(); save(); render(); break;
+    case "slot": openSlotModal(el.dataset.slot); break;
+    case "assign": assignSlot(el.dataset.slot, el.dataset.recipe||""); break;
+    case "new-recipe": openRecipeModal(null); break;
+    case "edit-recipe": openRecipeModal(el.dataset.id); break;
+    case "add-ing": captureRecipeForm(); editing.items.push({ing:Object.keys(ING)[0], q:1}); renderRecipeModal(); break;
+    case "rm-ing": captureRecipeForm(); editing.items.splice(parseInt(el.dataset.i),1); renderRecipeModal(); break;
+    case "save-recipe": saveRecipe(); break;
+    case "del-recipe": deleteRecipe(el.dataset.id); break;
+    case "pantry": pantryStep(el.dataset.ing, parseInt(el.dataset.dir)); break;
+    case "tick": tickItem(el.dataset.ing); break;
+    case "untick": untickItem(el.dataset.ing); break;
+    case "new-ingredient": openIngredientModal(null); break;
+    case "edit-ingredient": openIngredientModal(el.dataset.ing); break;
+    case "pick-ns": captureIngredientForm(); editingIng.ns = el.dataset.ns; renderIngredientModal(); break;
+    case "auto-score": autoScoreLookup(); break;
+    case "save-ingredient": saveIngredient(); break;
+    case "ask-del-ingredient": confirmDeleteIngredient(el.dataset.ing); break;
+    case "del-ingredient": deleteIngredient(el.dataset.ing); break;
+    case "export": openExportModal(); break;
+    case "import": openImportModal(); break;
+    case "download-backup": downloadBackup(); break;
+    case "copy-export": copyExport(el); break;
+    case "do-import": doImport(); break;
+    case "sync": openSyncModal(); break;
+    case "sync-connect": syncConnect(overlay.querySelector("#sync-config").value); break;
+    case "sync-signin": syncAuth(overlay.querySelector("#sync-email").value.trim(), overlay.querySelector("#sync-pass").value, false); break;
+    case "sync-signup": syncAuth(overlay.querySelector("#sync-email").value.trim(), overlay.querySelector("#sync-pass").value, true); break;
+    case "sync-signout": syncSignOut(); break;
+    case "sync-disconnect": syncDisconnect(); break;
+    case "sync-use-cloud": syncMergeChoose(true); break;
+    case "sync-upload-local": syncMergeChoose(false); break;
+    case "close": closeModal(); break;
+  }
+});
+// live score update while typing / changing ingredients in recipe modal
+document.addEventListener("change", e=>{
+  // import: load a chosen backup file into the textarea
+  if(e.target.id==="imp-file"){
+    const f = e.target.files && e.target.files[0]; if(!f) return;
+    const reader = new FileReader();
+    reader.onload = () => { const ta = overlay.querySelector("#imp-txt"); if(ta){ ta.value = reader.result; ta.style.borderColor=""; } };
+    reader.readAsText(f); return;
+  }
+  const el = e.target.closest("[data-action]");
+  if(el && el.dataset.action==="store"){
+    state.storeId = el.value; save(); render(); return;
+  }
+  // ingredient modal: category/unit change -> reset grams default & re-render
+  if(editingIng && e.target.id==="ing-unit"){
+    captureIngredientForm(); editingIng.g = defaultG(editingIng.unit); renderIngredientModal(); return;
+  }
+  // recipe ingredient dropdown changed -> refresh live unit + score
+  if(editing && overlay.contains(e.target) && e.target.closest(".irow")){
+    captureRecipeForm(); renderRecipeModal();
+  }
+});
+/* Unified pointer drag (mouse + touch + pen):
+   - calendar meals between days
+   - shopping category headers to reorder aisles
+   Categories use touch-action:none so a touch drags immediately; calendar cells
+   keep normal scrolling and start a drag via long-press so quick swipes still scroll. */
+let pdrag = null;
+let lastDragEnd = 0;
+
+function pdSource(target){
+  if(!target || !target.closest) return null;
+  const cell = target.closest(".mcell[data-draggable]");
+  if(cell) return {kind:"meal", id:cell.dataset.slot, el:cell, targetSel:".mcell.day"};
+  const head = target.closest(".cat-drag");
+  if(head) return {kind:"cat", id:head.dataset.cat, el:head, targetSel:".catgroup[data-cat]"};
+  return null;
+}
+function pdBegin(x,y){
+  if(!pdrag || pdrag.active) return;
+  pdrag.active = true;
+  const el = pdrag.src.el, r = el.getBoundingClientRect();
+  const g = el.cloneNode(true);
+  g.classList.add("pdrag-ghost");
+  g.style.width = r.width+"px"; g.style.left = r.left+"px"; g.style.top = r.top+"px";
+  pdrag.offX = x-r.left; pdrag.offY = y-r.top; pdrag.ghost = g;
+  document.body.appendChild(g);
+  el.classList.add("dragging");
+  document.body.classList.add("pdrag-active");
+}
+function pdMoveTo(x,y){
+  const g = pdrag.ghost;
+  g.style.left = (x-pdrag.offX)+"px"; g.style.top = (y-pdrag.offY)+"px";
+  const under = document.elementFromPoint(x,y);          // ghost has pointer-events:none
+  const tgt = under && under.closest ? under.closest(pdrag.src.targetSel) : null;
+  let dropId = null, hl = null;
+  if(tgt){
+    dropId = pdrag.src.kind==="meal" ? tgt.dataset.slot : tgt.dataset.cat;
+    hl = pdrag.src.kind==="meal" ? tgt : tgt.querySelector(".cat-drag");
+    if(pdrag.src.kind==="cat" && dropId===pdrag.src.id){ dropId=null; hl=null; }
+  }
+  if(pdrag.overEl && pdrag.overEl!==hl) pdrag.overEl.classList.remove("dragover");
+  if(hl) hl.classList.add("dragover");
+  pdrag.overEl = hl; pdrag.dropId = dropId;
+}
+function pdCleanup(){
+  if(pdrag && pdrag.ghost) pdrag.ghost.remove();
+  if(pdrag && pdrag.longTimer) clearTimeout(pdrag.longTimer);
+  document.querySelectorAll(".dragover,.dragging").forEach(c=>c.classList.remove("dragover","dragging"));
+  document.body.classList.remove("pdrag-active");
+}
+function pdFinish(){
+  if(!pdrag) return;
+  const wasActive = pdrag.active, src = pdrag.src, dropId = pdrag.dropId;
+  pdCleanup();
+  const done = pdrag; pdrag = null;
+  if(wasActive){
+    lastDragEnd = Date.now();                              // suppress the click synthesized after a drag
+    if(dropId){
+      if(src.kind==="meal") moveMeal(src.id, dropId);
+      else reorderCategory(src.id, dropId);
+    }
+  }
+}
+document.addEventListener("pointerdown", e=>{
+  if(e.pointerType==="mouse" && e.button!==0) return;
+  const src = pdSource(e.target);
+  if(!src) return;
+  pdrag = {src, startX:e.clientX, startY:e.clientY, active:false, longTimer:null};
+  const touch = e.pointerType!=="mouse";
+  if(touch && src.kind==="meal"){                          // long-press so a swipe still scrolls the calendar
+    pdrag.longTimer = setTimeout(()=>{ if(pdrag && !pdrag.active) pdBegin(pdrag.startX, pdrag.startY); }, 250);
+  }
+}, {passive:true});
+document.addEventListener("pointermove", e=>{
+  if(!pdrag) return;
+  const dist = Math.hypot(e.clientX-pdrag.startX, e.clientY-pdrag.startY);
+  if(!pdrag.active){
+    const touch = e.pointerType!=="mouse";
+    if(!touch || pdrag.src.kind==="cat"){                  // mouse anywhere, or touch on a category header
+      if(dist>6) pdBegin(e.clientX, e.clientY); else return;
+    }else{
+      if(dist>10) pdCleanup(), pdrag=null;                 // moved before long-press → it's a scroll
+      return;
+    }
+  }
+  if(pdrag && pdrag.active){ e.preventDefault(); pdMoveTo(e.clientX, e.clientY); }
+}, {passive:false});
+document.addEventListener("pointerup", pdFinish);
+document.addEventListener("pointercancel", ()=>{ pdCleanup(); pdrag=null; });
+
+// close modal when clicking backdrop
+overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
+
+render();
+if(getSyncConfig()) syncInit().catch(function(){ setSyncStatus("error"); });   // auto-reconnect cloud sync
+</script>
+<script>
+// Register the service worker for offline use / installability (PWA).
+if("serviceWorker" in navigator){
+  window.addEventListener("load", function(){
+    navigator.serviceWorker.register("sw.js").catch(function(){ /* offline support unavailable */ });
+  });
+}
+</script>
+</body>
+</html>

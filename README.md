@@ -4,6 +4,8 @@ A monthly meal planner with recipes, an ingredient pantry, Nutri-Scores and a sm
 shopping list. Single-file, vanilla JS, no build step — everything lives in `index.html`
 and state is saved in the browser's `localStorage`.
 
+Live on: <https://easy-bite.matija-jeras64.workers.dev>
+
 ## Features
 - **Plan** – monthly calendar, one lunch per day; drag meals between days (mouse + touch).
   Past days are dimmed and drop out of the shopping list.

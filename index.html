@@ -48,7 +48,9 @@
   nav.tabs button{
     border:none; background:transparent; color:var(--muted); font-weight:600; white-space:nowrap;
     padding:7px 12px; border-radius:999px; font-size:14px; position:relative; transition:.15s; flex:none;
+    display:inline-flex; align-items:center;
   }
+  .tabicon{display:none; line-height:1;}
   nav.tabs button.active{background:var(--accent); color:#fff;}
   nav.tabs button:hover:not(.active){color:var(--text);}
   .navbadge{
@@ -290,7 +292,10 @@
     .mcell .ddish{font-size:9px; -webkit-line-clamp:2;}
     .mcell .dnum{font-size:11px;}
     .calhead .mname{font-size:16px; min-width:0;}
-    nav.tabs button{padding:7px 10px; font-size:13px;}
+    nav.tabs{gap:2px;}
+    nav.tabs button{padding:8px 12px;}
+    .tabicon{display:inline-block; font-size:18px;}
+    .tablabel{display:none;}
     .logo-full{display:none;}
     .logo-mini{display:inline;}
     #langtoggle{display:none;}
@@ -682,15 +687,15 @@ function moveMeal(fromKey, toKey){
 /* ------------------------------------------------------------------ */
 function renderHeader(){
   const tabs = [
-    {v:"month", label:tr("week")},
-    {v:"recipes", label:tr("recipes")},
-    {v:"kitchen", label:tr("kitchen")},
-    {v:"shopping", label:tr("shopping")},
+    {v:"month", label:tr("week"), icon:"📅"},
+    {v:"recipes", label:tr("recipes"), icon:"📖"},
+    {v:"kitchen", label:tr("kitchen"), icon:"🥕"},
+    {v:"shopping", label:tr("shopping"), icon:"🛒"},
   ];
   const badgeN = unticketedCount();
   document.getElementById("tabs").innerHTML = tabs.map(t=>{
     const b = (t.v==="shopping" && badgeN>0) ? `<span class="navbadge">${badgeN}</span>` : "";
-    return `<button class="${state.view===t.v?"active":""}" data-action="view" data-view="${t.v}">${t.label}${b}</button>`;
+    return `<button class="${state.view===t.v?"active":""}" data-action="view" data-view="${t.v}" aria-label="${t.label}"><span class="tabicon">${t.icon}</span><span class="tablabel">${t.label}</span>${b}</button>`;
   }).join("");
   const langHTML = ["en","sl"].map(l=>`<button class="${state.lang===l?"active":""}" data-action="lang" data-lang="${l}">${l==="en"?"EN":"SLO"}</button>`).join("");
   document.getElementById("langtoggle").innerHTML = langHTML;                       // inline controls (desktop)

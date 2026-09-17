@@ -244,6 +244,9 @@
     width:100%; max-width:460px; padding:20px; margin:auto;
   }
   .modal h3{margin:0 0 14px; font-size:19px; display:flex; align-items:center; gap:10px;}
+  .modal-x{border:none; background:transparent; color:var(--muted); font-size:20px; line-height:1;
+    padding:4px 6px; margin:-4px -6px -4px 0; cursor:pointer; flex:none; border-radius:8px;}
+  .modal-x:hover{color:var(--text); background:var(--pill);}
   .modal h3 .grow{flex:1;}
   .field{margin-bottom:12px;}
   .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:5px; font-weight:600;}
@@ -923,16 +926,13 @@ function openSlotActions(slot, r, note){
   }).join("");
   const anyLeft = r.items.some(it=>ING[it.ing] && !(it.ing in state.list));
   openModal(`
-    <h3>${scoreBadge(biteScore(r), true)}<span class="grow">${escapeHtml(nameOf(r.name))}</span></h3>
+    <h3>${scoreBadge(biteScore(r), true)}<span class="grow">${escapeHtml(nameOf(r.name))}</span><button class="modal-x" data-action="close" aria-label="${tr("cancel")}">✕</button></h3>
     <p class="fhint" style="margin:0 0 10px;">${r.servings} ${tr("servingsShort")}</p>
     <div class="ilist">${rows}</div>
     ${note ? `<div class="tip" style="margin:10px 0 0;">${note}</div>` : ""}
     <button class="btn" style="width:100%; margin-top:12px;" data-action="add-all" data-slot="${slot}" data-recipe="${r.id}" ${anyLeft?"":"disabled"}>🛒 ${tr("addAll")}</button>
     <div class="modalfoot">
       <button class="btn ghost danger" data-action="assign" data-slot="${slot}" data-recipe="">${tr("clearSlot")}</button>
-      <div class="grow"></div>
-      <button class="btn ghost" data-action="slot-change" data-slot="${slot}">${tr("changeMeal")}</button>
-      <button class="btn ghost" data-action="close">${tr("done")}</button>
     </div>`);
 }
 

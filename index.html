@@ -930,8 +930,8 @@ function openSlotActions(slot, r, note){
     <p class="fhint" style="margin:0 0 10px;">${r.servings} ${tr("servingsShort")}</p>
     <div class="ilist">${rows}</div>
     ${note ? `<div class="tip" style="margin:10px 0 0;">${note}</div>` : ""}
-    <button class="btn" style="width:100%; margin-top:12px;" data-action="add-all" data-slot="${slot}" data-recipe="${r.id}" ${anyLeft?"":"disabled"}>🛒 ${tr("addAll")}</button>
     <div class="modalfoot">
+      <button class="btn" style="flex:1;" data-action="add-all" data-slot="${slot}" data-recipe="${r.id}" ${anyLeft?"":"disabled"}>🛒 ${tr("addAll")}</button>
       <button class="btn ghost danger" data-action="assign" data-slot="${slot}" data-recipe="">${tr("clearSlot")}</button>
     </div>`);
 }

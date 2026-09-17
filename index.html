@@ -504,6 +504,7 @@ function defaultState(){
 /* ------------------------------------------------------------------ */
 const LS_KEY = "easybite.v3";
 let state = load();
+state.month = currentMonthStr();   // the plan always opens on the current month
 let menuOpen = false;   // header overflow menu (language + theme); not persisted
 // --- cloud sync runtime (see sync block below); all null/false unless the user opts in ---
 let fbAuth = null, fbDb = null, syncUser = null, syncUnsub = null;
@@ -617,6 +618,7 @@ function setView(v){
   // leaving the shopping list ends the trip: bought (ticked) items are already in the
   // pantry, so clear them — next visit shows only what's still needed.
   if(state.view==="shopping" && v!=="shopping") state.ticked={};
+  if(v==="month") state.month = currentMonthStr();   // opening the plan snaps to this month
   state.view=v; closeModal(); save(); render();
 }
 

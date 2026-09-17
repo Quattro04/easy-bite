@@ -1,6 +1,6 @@
 # EasyBite 🍽️
 
-A monthly meal planner with recipes, an ingredient pantry, Nutri-Scores and a smart
+A monthly meal planner with recipes, BiteScore ratings, an ingredient pantry and a smart
 shopping list. Single-file, vanilla JS, no build step — everything lives in `index.html`
 and state is saved in the browser's `localStorage`.
 
@@ -9,9 +9,10 @@ Live on: <https://easy-bite.matija-jeras64.workers.dev>
 ## Features
 - **Plan** – monthly calendar, one lunch per day; drag meals between days (mouse + touch).
   Past days are dimmed and drop out of the shopping list.
-- **Recipes** – create/edit dishes with a live Nutri-Score badge and an "in stock" chip.
-- **Ingredients** – your pantry catalog; add/edit/delete ingredients, pick a Nutri-Score
-  manually or auto-suggest it from [Open Food Facts](https://openfoodfacts.org).
+- **Recipes** – create/edit dishes; rate each on Ease, Taste & Health (1–10) which combine
+  into a weighted **BiteScore** (0.2·Ease + 0.3·Taste + 0.5·Health), plus an "in stock" chip.
+- **Ingredients** – your pantry catalog; add/edit/delete ingredients, pick a per-ingredient
+  Nutri-Score manually or auto-suggest it from [Open Food Facts](https://openfoodfacts.org).
 - **Shopping** – auto-derived from the plan minus what's in the pantry; tick items to add
   them to the pantry; drag category headers to match each store's aisle order.
 - **EN / SLO** localization and light / dark themes.

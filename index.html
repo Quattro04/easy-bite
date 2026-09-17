@@ -17,12 +17,14 @@
     --bg:#fafafa; --card:#ffffff; --text:#1c1c22; --muted:#6b6b74;
     --border:#e6e6ea; --accent:#FF6B4A; --accent-soft:#fff0ec;
     --pill:#f0f0f2; --overlay:rgba(20,20,25,.45);
+    --nav-active:#4d4d57;   /* selected nav tab (muted dark gray on light theme) */
     --ns-a:#1e8f4e; --ns-b:#7cb342; --ns-c:#f6c344; --ns-d:#f08c2e; --ns-e:#e5484d;
   }
   body[data-theme="dark"]{
     --bg:#121215; --card:#1c1c21; --text:#ececf0; --muted:#9a9aa4;
     --border:#2c2c33; --accent:#FF7D5C; --accent-soft:#33231e;
     --pill:#26262c; --overlay:rgba(0,0,0,.6);
+    --nav-active:#565662;   /* selected nav tab (light gray on dark theme) */
   }
   *{box-sizing:border-box;}
   html,body{margin:0;padding:0;}
@@ -51,14 +53,13 @@
     display:inline-flex; align-items:center;
   }
   .tabicon{display:none; line-height:1;}
-  nav.tabs button.active{background:var(--accent); color:#fff;}
+  nav.tabs button.active{background:var(--nav-active); color:#fff;}
   nav.tabs button:hover:not(.active){color:var(--text);}
   .navbadge{
     display:inline-flex; align-items:center; justify-content:center; vertical-align:middle;
     background:var(--ns-e); color:#fff; font-size:12px; font-weight:700;
     min-width:20px; height:20px; border-radius:999px; padding:0 6px; margin-left:6px;
   }
-  nav.tabs button.active .navbadge{box-shadow:0 0 0 1.5px #fff;}
   .iconbtn{
     border:1px solid var(--border); background:var(--card); color:var(--text);
     border-radius:10px; padding:6px 10px; font-size:16px; line-height:1; transition:.15s; flex:none;

@@ -106,6 +106,17 @@
   .ns-A{background:var(--ns-a);} .ns-B{background:var(--ns-b);}
   .ns-C{background:var(--ns-c); color:#3a2e00;} .ns-D{background:var(--ns-d);} .ns-E{background:var(--ns-e);}
   .ns.sm{width:20px; height:20px; font-size:11px; border-radius:6px;}
+  /* BiteScore badge (decimal, colour by band) */
+  .score{
+    display:inline-flex; align-items:center; justify-content:center; padding:0 8px; height:24px; min-width:34px;
+    border-radius:8px; color:#fff; font-weight:700; font-size:13px; flex:none; letter-spacing:.2px;
+  }
+  .score.sm{height:20px; font-size:11px; padding:0 6px; min-width:30px; border-radius:6px;}
+  /* rating sliders in the recipe editor */
+  .raterow{display:flex; align-items:center; gap:10px; margin-bottom:8px;}
+  .raterow label{flex:none; width:96px; font-size:13px; color:var(--muted); font-weight:600; margin:0;}
+  .raterow input[type=range]{flex:1; accent-color:var(--accent); height:22px;}
+  .raterow .ratev{flex:none; width:22px; text-align:right; font-weight:700; font-size:14px;}
   /* month calendar */
   .calhead{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
   .calhead .mname{font-weight:700; font-size:18px; letter-spacing:-.3px; min-width:150px;}
@@ -359,8 +370,9 @@ const T = {
   en:{
     week:"Plan", recipes:"Recipes", kitchen:"Ingredients", shopping:"Shopping", theme:"Theme",
     weekTitle:"Monthly plan", weekSub:"One lunch per day — the shopping list follows.",
-    weekScore:"Month score", plannedMeals:"Planned lunches", toBuy:"To buy", goToList:"Go to list",
+    weekScore:"Avg. BiteScore", plannedMeals:"Planned lunches", toBuy:"To buy", goToList:"Go to list",
     lunch:"Lunch", today:"Today",
+    ratings:"Ratings (1–10)", ease:"Ease", taste:"Taste", health:"Health",
     recipesTitle:"Recipes", recipesSub:"Your dishes and what's in stock.",
     kitchenTitle:"Ingredients", kitchenSub:"Your ingredients and what you have in stock.",
     shoppingTitle:"Shopping list", shoppingSub:"Tick items as you buy — they land in the kitchen.",
@@ -404,8 +416,9 @@ const T = {
   sl:{
     week:"Načrt", recipes:"Recepti", kitchen:"Sestavine", shopping:"Nakup", theme:"Videz",
     weekTitle:"Mesečni načrt", weekSub:"En obrok na dan — nakupovalni seznam sledi.",
-    weekScore:"Ocena meseca", plannedMeals:"Načrtovana kosila", toBuy:"Za nakup", goToList:"Na seznam",
+    weekScore:"Povpr. BiteScore", plannedMeals:"Načrtovana kosila", toBuy:"Za nakup", goToList:"Na seznam",
     lunch:"Kosilo", today:"Danes",
+    ratings:"Ocene (1–10)", ease:"Enostavnost", taste:"Okus", health:"Zdravje",
     recipesTitle:"Recepti", recipesSub:"Tvoje jedi in kaj imaš doma.",
     kitchenTitle:"Sestavine", kitchenSub:"Tvoje sestavine in kaj imaš doma.",
     shoppingTitle:"Nakupovalni seznam", shoppingSub:"Odkljukaj kar kupiš — pristane v kuhinji.",
@@ -458,15 +471,15 @@ function defaultState(){
   return {
     view:"month", lang:"sl", theme:"light", month:M,
     recipes:[
-      {id:"r1", name:{en:"Spaghetti Bolognese", sl:"Špageti po bolonjsko"}, servings:4,
+      {id:"r1", name:{en:"Spaghetti Bolognese", sl:"Špageti po bolonjsko"}, servings:4, ease:6, taste:9, health:5,
         items:[{ing:"spaghetti",q:400},{ing:"mincedbeef",q:400},{ing:"tomatosauce",q:1},{ing:"onion",q:1},{ing:"oliveoil",q:20}]},
-      {id:"r2", name:{en:"Salmon & Rice Bowl", sl:"Losos z rižem"}, servings:2,
+      {id:"r2", name:{en:"Salmon & Rice Bowl", sl:"Losos z rižem"}, servings:2, ease:6, taste:8, health:9,
         items:[{ing:"salmon",q:300},{ing:"rice",q:200},{ing:"broccoli",q:200},{ing:"lemon",q:1}]},
-      {id:"r3", name:{en:"Banana Oat Breakfast", sl:"Ovseni zajtrk z banano"}, servings:2,
+      {id:"r3", name:{en:"Banana Oat Breakfast", sl:"Ovseni zajtrk z banano"}, servings:2, ease:9, taste:7, health:8,
         items:[{ing:"oats",q:100},{ing:"milk",q:300},{ing:"banana",q:2},{ing:"honey",q:20}]},
-      {id:"r4", name:{en:"Caprese Salad", sl:"Solata caprese"}, servings:2,
+      {id:"r4", name:{en:"Caprese Salad", sl:"Solata caprese"}, servings:2, ease:9, taste:8, health:7,
         items:[{ing:"tomato",q:3},{ing:"mozzarella",q:200},{ing:"oliveoil",q:20}]},
-      {id:"r5", name:{en:"Chicken Stir-fry", sl:"Piščanec z zelenjavo iz voka"}, servings:3,
+      {id:"r5", name:{en:"Chicken Stir-fry", sl:"Piščanec z zelenjavo iz voka"}, servings:3, ease:5, taste:8, health:8,
         items:[{ing:"chicken",q:400},{ing:"bellpepper",q:2},{ing:"carrot",q:2},{ing:"rice",q:200},{ing:"oliveoil",q:20}]},
     ],
     plan:{
@@ -511,10 +524,19 @@ function load(){
     const raw = localStorage.getItem(LS_KEY);
     if(raw){
       const parsed = JSON.parse(raw);
-      return Object.assign(defaultState(), parsed);
+      return migrate(Object.assign(defaultState(), parsed));
     }
   }catch(e){ /* ignore */ }
   return defaultState();
+}
+function migrate(s){
+  // older recipes had no BiteScore ratings — default them to a neutral 5
+  (s.recipes||[]).forEach(r=>{
+    if(typeof r.ease!=="number")   r.ease=5;
+    if(typeof r.taste!=="number")  r.taste=5;
+    if(typeof r.health!=="number") r.health=5;
+  });
+  return s;
 }
 function save(){
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* ignore */ }
@@ -538,21 +560,24 @@ function fmtQty(q){
 }
 function qtyUnit(ingId, q){ return fmtQty(q) + " " + unitLabel(ING[ingId].unit); }
 
+/* Nutri-Score (A–E) — still used per ingredient in the catalog / shopping list */
 const NS_VAL = {A:100,B:75,C:50,D:25,E:0};
 function valueToLetter(v){ return v>=80?"A":v>=60?"B":v>=40?"C":v>=20?"D":"E"; }
-function recipeValue(recipe){
-  let w=0, acc=0;
-  recipe.items.forEach(it=>{
-    const ing = ING[it.ing]; if(!ing) return;
-    const weight = it.q * (ing.g||1);
-    w += weight; acc += weight * NS_VAL[ing.ns];
-  });
-  return w===0 ? null : acc/w;
-}
-function recipeLetter(recipe){ const v=recipeValue(recipe); return v===null?null:valueToLetter(v); }
 function badge(letter, sm){
   if(!letter) return "";
   return `<span class="ns${sm?" sm":""} ns-${letter}">${letter}</span>`;
+}
+
+/* BiteScore — user-rated Ease / Taste / Health (each 1–10), weighted into one 1–10 score */
+const BITE_W = {ease:0.2, taste:0.3, health:0.5};
+function biteScore(r){
+  if(!r || typeof r.health!=="number" || typeof r.taste!=="number" || typeof r.ease!=="number") return null;
+  return BITE_W.ease*r.ease + BITE_W.taste*r.taste + BITE_W.health*r.health;
+}
+function scoreBand(v){ return v>=8?"A":v>=6.5?"B":v>=5?"C":v>=3.5?"D":"E"; }   // reuse the A–E colours
+function scoreBadge(v, sm){
+  if(v===null || v===undefined) return "";
+  return `<span class="score${sm?" sm":""} ns-${scoreBand(v)}">${v.toFixed(1)}</span>`;
 }
 
 function escapeHtml(s){
@@ -685,14 +710,14 @@ function renderMonth(){
   const prefix = y+"-"+pad2(m+1)+"-";
   const today = todayKey();
   const monthKeys = Object.keys(state.plan).filter(k=>k.startsWith(prefix) && recipeById(state.plan[k]));
-  const values = monthKeys.map(k=>recipeValue(recipeById(state.plan[k]))).filter(v=>v!==null);
-  const monthLetter = values.length ? valueToLetter(values.reduce((a,b)=>a+b,0)/values.length) : null;
+  const values = monthKeys.map(k=>biteScore(recipeById(state.plan[k]))).filter(v=>v!==null);
+  const monthAvg = values.length ? values.reduce((a,b)=>a+b,0)/values.length : null;
   const planned = monthKeys.filter(k=>k>=today).length;   // upcoming lunches only
   const toBuy = unticketedCount();
 
   const summary = `
     <div class="summary">
-      <div class="stat"><div class="k">${tr("weekScore")}</div><div class="v">${monthLetter?badge(monthLetter):"–"}</div></div>
+      <div class="stat"><div class="k">${tr("weekScore")}</div><div class="v">${monthAvg!==null?scoreBadge(monthAvg):"–"}</div></div>
       <div class="stat"><div class="k">${tr("plannedMeals")}</div><div class="v">${planned}</div></div>
       <div class="stat"><div class="k">${tr("toBuy")}</div><div class="v">${toBuy}</div></div>
       <div class="stat" style="display:flex;align-items:center;justify-content:center;">
@@ -723,7 +748,7 @@ function renderMonth(){
       cells += `<div class="mcell day${todayCls}${pastCls}" data-draggable="1" data-action="slot" data-slot="${key}">
         <div class="dnum">${d}</div>
         <div class="ddish">${escapeHtml(nameOf(r.name))}</div>
-        <div class="dfoot">${badge(recipeLetter(r), true)}</div>
+        <div class="dfoot">${scoreBadge(biteScore(r), true)}</div>
       </div>`;
     }else{
       cells += `<div class="mcell day empty${todayCls}" data-action="slot" data-slot="${key}">
@@ -744,7 +769,7 @@ function renderRecipes(){
       ? `<span class="chip ok">${tr("allInKitchen")}</span>`
       : `<span class="chip miss">${missing} ${tr("missing")}</span>`;
     return `<div class="card recipe" data-action="edit-recipe" data-id="${r.id}">
-      <div class="rtop"><div class="rname">${escapeHtml(nameOf(r.name))}</div>${badge(recipeLetter(r))}</div>
+      <div class="rtop"><div class="rname">${escapeHtml(nameOf(r.name))}</div>${scoreBadge(biteScore(r))}</div>
       <div class="rmeta">${r.items.length} ${tr("ingsShort")} · ${r.servings} ${tr("servingsShort")}</div>
       ${chip}
     </div>`;
@@ -844,7 +869,7 @@ function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; edi
 function openSlotModal(slot){
   const rows = state.recipes.map(r=>
     `<div class="ritem" data-action="assign" data-slot="${slot}" data-recipe="${r.id}">
-      ${badge(recipeLetter(r), true)}<div class="rn">${escapeHtml(nameOf(r.name))}</div>
+      ${scoreBadge(biteScore(r), true)}<div class="rn">${escapeHtml(nameOf(r.name))}</div>
     </div>`).join("");
   const current = state.plan[slot];
   const clear = current ? `<button class="linkbtn" data-action="assign" data-slot="${slot}" data-recipe="">✕ ${tr("clearSlot")}</button>` : "";
@@ -858,8 +883,8 @@ let editing = null;
 function openRecipeModal(id){
   const r = id ? recipeById(id) : null;
   editing = r
-    ? {id:r.id, name:nameOf(r.name), servings:r.servings, items:r.items.map(it=>({ing:it.ing,q:it.q}))}
-    : {id:null, name:"", servings:2, items:[{ing:Object.keys(ING)[0], q:1}]};
+    ? {id:r.id, name:nameOf(r.name), servings:r.servings, ease:r.ease, taste:r.taste, health:r.health, items:r.items.map(it=>({ing:it.ing,q:it.q}))}
+    : {id:null, name:"", servings:2, ease:5, taste:5, health:5, items:[{ing:Object.keys(ING)[0], q:1}]};
   renderRecipeModal();
 }
 function captureRecipeForm(){
@@ -867,6 +892,7 @@ function captureRecipeForm(){
   const m = overlay;
   editing.name = m.querySelector("#rc-name").value;
   editing.servings = Math.max(1, parseInt(m.querySelector("#rc-serv").value)||1);
+  ["ease","taste","health"].forEach(k=>{ const el=m.querySelector('[data-rate="'+k+'"]'); if(el) editing[k]=parseInt(el.value)||0; });
   const rows = m.querySelectorAll(".irow");
   editing.items = Array.from(rows).map(row=>({
     ing: row.querySelector("select").value,
@@ -887,13 +913,18 @@ function renderRecipeModal(){
       <span class="unit">${unitLabel(ING[it.ing].unit)}</span>
       <button class="rm" data-action="rm-ing" data-i="${i}">✕</button>
     </div>`).join("");
-  // live score from current editing items
-  const liveLetter = recipeLetter({items:editing.items});
+  const rate = (k,label) => `<div class="raterow">
+      <label>${label}</label>
+      <input type="range" min="1" max="10" step="1" value="${editing[k]}" data-rate="${k}">
+      <span class="ratev" data-ratev="${k}">${editing[k]}</span>
+    </div>`;
   const delBtn = editing.id ? `<button class="btn danger" data-action="del-recipe" data-id="${editing.id}">${tr("del")}</button>` : "";
   openModal(`
-    <h3>${badge(liveLetter)}<span class="grow">${editing.id?tr("editRecipe"):tr("newRecipe")}</span></h3>
+    <h3><span id="rc-score">${scoreBadge(biteScore(editing))}</span><span class="grow">${editing.id?tr("editRecipe"):tr("newRecipe")}</span></h3>
     <div class="field"><label>${tr("name")}</label><input id="rc-name" type="text" value="${escapeHtml(editing.name)}"></div>
     <div class="field"><label>${tr("servings")}</label><input id="rc-serv" type="number" min="1" value="${editing.servings}"></div>
+    <div class="field"><label>${tr("ratings")}</label>
+      ${rate("ease", tr("ease"))}${rate("taste", tr("taste"))}${rate("health", tr("health"))}</div>
     <div class="field"><label>${tr("ingredients")}</label>${rows}
       <button class="linkbtn" data-action="add-ing">${tr("addIngredient")}</button></div>
     <div class="modalfoot">${delBtn}<div class="grow"></div>
@@ -905,12 +936,14 @@ function saveRecipe(){
   captureRecipeForm();
   const name = editing.name.trim() || (state.lang==="sl"?"Recept":"Recipe");
   const items = editing.items.filter(it=>it.q>0);
+  const rt = {ease:editing.ease, taste:editing.taste, health:editing.health};
   if(editing.id){
     const r = recipeById(editing.id);
     r.name = {en:name, sl:name}; r.servings=editing.servings; r.items=items;
+    r.ease=rt.ease; r.taste=rt.taste; r.health=rt.health;
   }else{
     const id = "r"+Date.now();
-    state.recipes.push({id, name:{en:name, sl:name}, servings:editing.servings, items});
+    state.recipes.push(Object.assign({id, name:{en:name, sl:name}, servings:editing.servings, items}, rt));
   }
   closeModal(); save(); render();
 }
@@ -1111,7 +1144,7 @@ function doImport(){
   let data;
   try{ data = JSON.parse(txt); }catch(e){ return fail(); }
   if(!data || typeof data!=="object" || !Array.isArray(data.recipes) || typeof data.plan!=="object"){ return fail(); }
-  state = Object.assign(defaultState(), data);
+  state = migrate(Object.assign(defaultState(), data));
   rebuildCatalog();               // reconstruct the catalog for this imported data
   menuOpen = false; closeModal(); save(); render();
 }
@@ -1223,7 +1256,7 @@ function applyRemote(jsonStr){
   let data; try{ data = JSON.parse(jsonStr); }catch(e){ return; }
   if(!data || typeof data!=="object" || !Array.isArray(data.recipes)) return;
   applyingRemote = true;
-  state = Object.assign(defaultState(), data);
+  state = migrate(Object.assign(defaultState(), data));
   rebuildCatalog();
   try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
   applyingRemote = false;
@@ -1390,6 +1423,15 @@ document.addEventListener("change", e=>{
   if(editing && overlay.contains(e.target) && e.target.closest(".irow")){
     captureRecipeForm(); renderRecipeModal();
   }
+});
+// live BiteScore + value label while dragging a rating slider (no full re-render)
+document.addEventListener("input", e=>{
+  const sl = e.target.closest && e.target.closest('[data-rate]');
+  if(!sl || !editing) return;
+  const k = sl.dataset.rate;
+  editing[k] = parseInt(sl.value)||0;
+  const v = overlay.querySelector('[data-ratev="'+k+'"]'); if(v) v.textContent = editing[k];
+  const badgeEl = overlay.querySelector("#rc-score"); if(badgeEl) badgeEl.innerHTML = scoreBadge(biteScore(editing));
 });
 /* Unified pointer drag (mouse + touch + pen):
    - calendar meals between days

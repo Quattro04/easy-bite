@@ -119,11 +119,13 @@
   .raterow .ratev{flex:none; width:22px; text-align:right; font-weight:700; font-size:14px;}
   /* ingredient list inside the plan-day modal */
   .ilist{display:flex; flex-direction:column;}
-  .ilrow{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border);}
+  .ilrow{display:flex; align-items:center; gap:10px; padding:10px 6px; border-bottom:1px solid var(--border);
+    cursor:pointer; border-radius:8px; transition:background .12s;}
   .ilrow:last-child{border-bottom:none;}
+  .ilrow:active{background:var(--accent-soft);}
   .ilrow .iln{flex:1; font-weight:500;}
+  .ilrow.on .iln{color:var(--muted);}
   .ilrow .ilq{color:var(--muted); font-size:13px;}
-  .ilrow .ilon{color:var(--ns-a); font-weight:700; width:32px; text-align:center; flex:none;}
   /* month calendar */
   .calhead{display:flex; align-items:center; gap:10px; margin-bottom:12px;}
   .calhead .mname{font-weight:700; font-size:18px; letter-spacing:-.3px; min-width:150px;}
@@ -912,14 +914,11 @@ function openSlotActions(slot, r, note){
   const rows = r.items.filter(it=>ING[it.ing]).map(it=>{
     const ing = ING[it.ing];
     const onList = (it.ing in state.list);
-    const add = onList
-      ? `<span class="ilon" title="${tr("onList")}">✓</span>`
-      : `<button class="iconmini" data-action="add-item-one" data-slot="${slot}" data-recipe="${r.id}" data-ing="${it.ing}" data-q="${it.q}" title="${tr("addToList")}">＋</button>`;
-    return `<div class="ilrow">
+    return `<div class="ilrow${onList?" on":""}" data-action="toggle-list-item" data-slot="${slot}" data-recipe="${r.id}" data-ing="${it.ing}" data-q="${it.q}" title="${onList?tr("onList"):tr("addToList")}">
+      <div class="check ${onList?"on":""}">✓</div>
       ${badge(ing.ns, true)}
       <span class="iln">${escapeHtml(nameOf(ing.name))}</span>
       <span class="ilq">${qtyUnit(it.ing, it.q)}</span>
-      ${add}
     </div>`;
   }).join("");
   const anyLeft = r.items.some(it=>ING[it.ing] && !(it.ing in state.list));
@@ -1413,7 +1412,13 @@ document.addEventListener("click", e=>{
       overlay.querySelectorAll(".pick-chip").forEach(c=>c.classList.toggle("active", c.dataset.sort===pickerCtx.sort));
       document.getElementById("pick-list").innerHTML = pickListHTML();
       break;
-    case "add-item-one": { addListItem(el.dataset.ing, parseFloat(el.dataset.q)); openSlotActions(el.dataset.slot, recipeById(el.dataset.recipe)); render(); break; }
+    case "toggle-list-item": {
+      const ing = el.dataset.ing;
+      if(ing in state.list){ delete state.list[ing]; delete state.ticked[ing]; }
+      else { addListItem(ing, parseFloat(el.dataset.q)); }
+      save(); openSlotActions(el.dataset.slot, recipeById(el.dataset.recipe)); render();
+      break;
+    }
     case "add-all": { const n=addAllMissing(el.dataset.recipe); openSlotActions(el.dataset.slot, recipeById(el.dataset.recipe), n>0?tr("addedToList").replace("{n}", n):null); render(); break; }
     case "tick": tickItem(el.dataset.ing); break;
     case "untick": untickItem(el.dataset.ing); break;

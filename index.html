@@ -256,13 +256,25 @@
   .irow .rm{border:none; background:transparent; color:var(--ns-e); font-size:18px; padding:2px 6px;}
   .modalfoot{display:flex; gap:8px; margin-top:16px;}
   .modalfoot .grow{flex:1;}
-  .rlist{display:flex; flex-direction:column; gap:6px; max-height:60vh; overflow-y:auto;}
+  .rlist{display:flex; flex-direction:column; gap:6px; max-height:50vh; overflow-y:auto; -webkit-overflow-scrolling:touch;}
   .rlist .ritem{
-    display:flex; align-items:center; gap:10px; padding:11px; border:1px solid var(--border);
+    display:flex; align-items:center; gap:10px; padding:13px 12px; border:1px solid var(--border);
     border-radius:11px; cursor:pointer; transition:.15s; background:var(--card);
   }
+  .rlist .ritem:active{border-color:var(--accent); background:var(--accent-soft);}
   .rlist .ritem:hover{border-color:var(--accent);}
   .rlist .ritem .rn{flex:1; font-weight:600;}
+  /* recipe picker: search + sort (mobile-first) */
+  .pick-search{width:100%; box-sizing:border-box; border:1px solid var(--border); background:var(--bg);
+    color:var(--text); border-radius:11px; padding:12px 14px; font-size:16px; font-family:inherit; margin-bottom:10px;}
+  .pick-search:focus{outline:none; border-color:var(--accent);}
+  .pick-sort{display:flex; align-items:center; gap:6px; margin-bottom:12px; overflow-x:auto; scrollbar-width:none; -webkit-overflow-scrolling:touch;}
+  .pick-sort::-webkit-scrollbar{display:none;}
+  .pick-sortlbl{flex:none; font-size:12px; color:var(--muted); font-weight:600; margin-right:2px;}
+  .pick-chip{flex:none; border:1px solid var(--border); background:var(--card); color:var(--muted);
+    padding:8px 14px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; transition:.12s;}
+  .pick-chip.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .pick-metric{flex:none; font-weight:700; font-size:15px; color:var(--accent); min-width:22px; text-align:right;}
   .linkbtn{border:none; background:transparent; color:var(--accent); font-weight:600; font-size:14px; padding:6px 0;}
   .bigtext{width:100%; min-height:120px; max-height:230px; border:1px solid var(--border); background:var(--bg);
     color:var(--text); border-radius:10px; padding:10px; font-family:ui-monospace,Menlo,Consolas,monospace;
@@ -382,6 +394,7 @@ const T = {
     weekScore:"Avg. BiteScore", plannedMeals:"Planned lunches", toBuy:"To buy", goToList:"Go to list",
     lunch:"Lunch", today:"Today",
     ratings:"Ratings (1–10)", ease:"Ease", taste:"Taste", health:"Health",
+    searchRecipes:"Search recipes…", sortBy:"Sort", scoreShort:"Score", noRecipeMatch:"No recipes match.",
     recipesTitle:"Recipes", recipesSub:"Your dishes and their BiteScore.",
     kitchenTitle:"Ingredients", kitchenSub:"Your ingredient catalog and Nutri-Scores.",
     shoppingTitle:"Shopping list", shoppingSub:"Add recipes from the Plan, tick items as you buy.",
@@ -429,6 +442,7 @@ const T = {
     weekScore:"Povpr. BiteScore", plannedMeals:"Načrtovana kosila", toBuy:"Za nakup", goToList:"Na seznam",
     lunch:"Kosilo", today:"Danes",
     ratings:"Ocene (1–10)", ease:"Enostavnost", taste:"Okus", health:"Zdravje",
+    searchRecipes:"Išči recepte…", sortBy:"Razvrsti", scoreShort:"Ocena", noRecipeMatch:"Ni ujemajočih receptov.",
     recipesTitle:"Recepti", recipesSub:"Tvoje jedi in njihov BiteScore.",
     kitchenTitle:"Sestavine", kitchenSub:"Katalog sestavin in Nutri-ocene.",
     shoppingTitle:"Nakupovalni seznam", shoppingSub:"Dodaj recepte iz načrta, odkljukaj kar kupiš.",
@@ -850,23 +864,49 @@ function renderShopping(){
 /* ------------------------------------------------------------------ */
 const overlay = document.getElementById("overlay");
 function openModal(html){ overlay.innerHTML = `<div class="modal">${html}</div>`; overlay.classList.add("on"); }
-function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; syncModalOpen=false; }
+function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; syncModalOpen=false; pickerCtx=null; }
 
 function openSlotModal(slot){
   const rid = state.plan[slot];
   const r = rid ? recipeById(rid) : null;
   if(r){ openSlotActions(slot, r); } else { openSlotPicker(slot); }
 }
-function openSlotPicker(slot){
-  const rows = state.recipes.map(r=>
-    `<div class="ritem" data-action="assign" data-slot="${slot}" data-recipe="${r.id}">
-      ${scoreBadge(biteScore(r), true)}<div class="rn">${escapeHtml(nameOf(r.name))}</div>
-    </div>`).join("");
+let pickerCtx = null;   // {slot, q, sort} for the recipe picker
+function openSlotPicker(slot){ pickerCtx = {slot, q:"", sort:"score"}; renderSlotPicker(); }
+function pickerRecipes(){
+  const q = pickerCtx.q.trim().toLowerCase();
+  let list = state.recipes.slice();
+  if(q) list = list.filter(r => (r.name.en+" "+r.name.sl).toLowerCase().includes(q));
+  const key = pickerCtx.sort;
+  const val = r => key==="score" ? (biteScore(r)||0) : (r[key]||0);
+  return list.sort((a,b)=> val(b)-val(a));
+}
+function pickListHTML(){
+  const key = pickerCtx.sort;
+  const rows = pickerRecipes().map(r=>{
+    const metric = key!=="score" ? `<span class="pick-metric">${r[key]}</span>` : "";
+    return `<div class="ritem" data-action="assign" data-slot="${pickerCtx.slot}" data-recipe="${r.id}">
+      ${scoreBadge(biteScore(r), true)}
+      <div class="rn">${escapeHtml(nameOf(r.name))}</div>
+      ${metric}
+    </div>`;
+  }).join("");
+  return rows || `<div class="empty" style="padding:24px 8px;">${tr("noRecipeMatch")}</div>`;
+}
+function renderSlotPicker(){
+  const slot = pickerCtx.slot;
   const current = state.plan[slot];
   const clear = current ? `<button class="linkbtn" data-action="assign" data-slot="${slot}" data-recipe="">✕ ${tr("clearSlot")}</button>` : "";
-  openModal(`<h3>${tr("chooseRecipe")}</h3><div class="rlist">${rows}</div>
+  const chip = (k,label)=>`<button class="pick-chip${pickerCtx.sort===k?" active":""}" data-action="pick-sort" data-sort="${k}">${label}</button>`;
+  openModal(`<h3>${tr("chooseRecipe")}</h3>
+    <input id="pick-search" class="pick-search" type="text" placeholder="${tr("searchRecipes")}" value="${escapeHtml(pickerCtx.q)}" autocomplete="off">
+    <div class="pick-sort">
+      <span class="pick-sortlbl">${tr("sortBy")}</span>
+      ${chip("score", tr("scoreShort"))}${chip("ease", tr("ease"))}${chip("taste", tr("taste"))}${chip("health", tr("health"))}
+    </div>
+    <div class="rlist" id="pick-list">${pickListHTML()}</div>
     <div class="modalfoot"><div class="grow">${clear}</div>
-    <button class="btn ghost" data-action="close">${tr("cancel")}</button></div>`);
+      <button class="btn ghost" data-action="close">${tr("cancel")}</button></div>`);
 }
 function openSlotActions(slot, r, note){
   const rows = r.items.filter(it=>ING[it.ing]).map(it=>{
@@ -1368,6 +1408,11 @@ document.addEventListener("click", e=>{
     case "save-recipe": saveRecipe(); break;
     case "del-recipe": deleteRecipe(el.dataset.id); break;
     case "slot-change": openSlotPicker(el.dataset.slot); break;
+    case "pick-sort":
+      pickerCtx.sort = el.dataset.sort;
+      overlay.querySelectorAll(".pick-chip").forEach(c=>c.classList.toggle("active", c.dataset.sort===pickerCtx.sort));
+      document.getElementById("pick-list").innerHTML = pickListHTML();
+      break;
     case "add-item-one": { addListItem(el.dataset.ing, parseFloat(el.dataset.q)); openSlotActions(el.dataset.slot, recipeById(el.dataset.recipe)); render(); break; }
     case "add-all": { const n=addAllMissing(el.dataset.recipe); openSlotActions(el.dataset.slot, recipeById(el.dataset.recipe), n>0?tr("addedToList").replace("{n}", n):null); render(); break; }
     case "tick": tickItem(el.dataset.ing); break;
@@ -1421,6 +1466,11 @@ document.addEventListener("change", e=>{
 });
 // live BiteScore + value label while dragging a rating slider (no full re-render)
 document.addEventListener("input", e=>{
+  if(e.target.id==="pick-search" && pickerCtx){
+    pickerCtx.q = e.target.value;
+    const lst = document.getElementById("pick-list"); if(lst) lst.innerHTML = pickListHTML();
+    return;
+  }
   const sl = e.target.closest && e.target.closest('[data-rate]');
   if(!sl || !editing) return;
   const k = sl.dataset.rate;

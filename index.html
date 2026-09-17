@@ -192,7 +192,9 @@
     border:1px solid var(--border); border-radius:12px; margin-bottom:6px; background:var(--card);
   }
   .prow .pname{flex:1; font-weight:500;}
-  .prow .pqty{color:var(--muted); font-size:14px; min-width:70px; text-align:right;}
+  .prow .punit{color:var(--muted); font-size:13px;}
+  .sitem .rm-item{color:var(--muted); border-color:transparent; background:transparent;}
+  .sitem .rm-item:hover{color:var(--ns-e); border-color:var(--ns-e); background:var(--card);}
   .stepper{display:flex; gap:6px;}
   .stepper button{
     width:32px; height:32px; border-radius:9px; border:1px solid var(--border);
@@ -373,18 +375,18 @@ const T = {
     weekScore:"Avg. BiteScore", plannedMeals:"Planned lunches", toBuy:"To buy", goToList:"Go to list",
     lunch:"Lunch", today:"Today",
     ratings:"Ratings (1–10)", ease:"Ease", taste:"Taste", health:"Health",
-    recipesTitle:"Recipes", recipesSub:"Your dishes and what's in stock.",
-    kitchenTitle:"Ingredients", kitchenSub:"Your ingredients and what you have in stock.",
-    shoppingTitle:"Shopping list", shoppingSub:"Tick items as you buy — they land in the kitchen.",
+    recipesTitle:"Recipes", recipesSub:"Your dishes and their BiteScore.",
+    kitchenTitle:"Ingredients", kitchenSub:"Your ingredient catalog and Nutri-Scores.",
+    shoppingTitle:"Shopping list", shoppingSub:"Add recipes from the Plan, tick items as you buy.",
     newRecipe:"New recipe", editRecipe:"Edit recipe", chooseRecipe:"Choose a recipe",
-    clearSlot:"Clear this slot", cancel:"Cancel", save:"Save", del:"Delete",
+    clearSlot:"Clear day", cancel:"Cancel", save:"Save", del:"Delete",
     name:"Name", servings:"Servings", ingredients:"Ingredients", addIngredient:"+ Add ingredient",
-    allInKitchen:"✓ all in kitchen",
     servingsShort:"servings", ingsShort:"ingredients",
-    store:"Store", finishTrip:"Finish trip", addItem:"+ Add item", quantity:"Quantity", ingredient:"Ingredient",
-    progress:"bought", of:"of",
+    store:"Store",
+    addToList:"Add to shopping list", changeMeal:"Change", removeItem:"Remove", clearList:"Clear list",
+    addedToList:"✓ Added {n} ingredients to the shopping list.",
     tip:"↕ Drag the category headers to match this store's aisle order — it's saved per store.",
-    emptyList:"Nothing to buy — your kitchen has it all covered. 🎉",
+    emptyList:"Your shopping list is empty — open a planned day and tap “Add to shopping list”. 🛒",
     noRecipes:"No recipes yet.", pickIngredient:"Pick an ingredient",
     confirmDelPlan:"", missing:"missing",
     newIngredient:"+ New ingredient", editIngredient:"Edit ingredient",
@@ -419,18 +421,18 @@ const T = {
     weekScore:"Povpr. BiteScore", plannedMeals:"Načrtovana kosila", toBuy:"Za nakup", goToList:"Na seznam",
     lunch:"Kosilo", today:"Danes",
     ratings:"Ocene (1–10)", ease:"Enostavnost", taste:"Okus", health:"Zdravje",
-    recipesTitle:"Recepti", recipesSub:"Tvoje jedi in kaj imaš doma.",
-    kitchenTitle:"Sestavine", kitchenSub:"Tvoje sestavine in kaj imaš doma.",
-    shoppingTitle:"Nakupovalni seznam", shoppingSub:"Odkljukaj kar kupiš — pristane v kuhinji.",
+    recipesTitle:"Recepti", recipesSub:"Tvoje jedi in njihov BiteScore.",
+    kitchenTitle:"Sestavine", kitchenSub:"Katalog sestavin in Nutri-ocene.",
+    shoppingTitle:"Nakupovalni seznam", shoppingSub:"Dodaj recepte iz načrta, odkljukaj kar kupiš.",
     newRecipe:"Nov recept", editRecipe:"Uredi recept", chooseRecipe:"Izberi recept",
-    clearSlot:"Odstrani obrok", cancel:"Prekliči", save:"Shrani", del:"Izbriši",
+    clearSlot:"Odstrani dan", cancel:"Prekliči", save:"Shrani", del:"Izbriši",
     name:"Ime", servings:"Porcije", ingredients:"Sestavine", addIngredient:"+ Dodaj sestavino",
-    allInKitchen:"✓ vse doma",
     servingsShort:"porcij", ingsShort:"sestavin",
-    store:"Trgovina", finishTrip:"Zaključi nakup", addItem:"+ Dodaj izdelek", quantity:"Količina", ingredient:"Sestavina",
-    progress:"kupljeno", of:"od",
+    store:"Trgovina",
+    addToList:"Dodaj na nakupovalni seznam", changeMeal:"Zamenjaj", removeItem:"Odstrani", clearList:"Počisti seznam",
+    addedToList:"✓ Dodano {n} sestavin na nakupovalni seznam.",
     tip:"↕ Povleci naslove kategorij, da se ujemajo z razporedom te trgovine — shrani se za vsako trgovino posebej.",
-    emptyList:"Nič za kupiti — kuhinja ima vse. 🎉",
+    emptyList:"Nakupovalni seznam je prazen — odpri načrtovan dan in pritisni “Dodaj na nakupovalni seznam”. 🛒",
     noRecipes:"Zaenkrat ni receptov.", pickIngredient:"Izberi sestavino",
     confirmDelPlan:"", missing:"manjka",
     newIngredient:"+ Nova sestavina", editIngredient:"Uredi sestavino",
@@ -486,9 +488,9 @@ function defaultState(){
       [M+"-03"]:"r1", [M+"-04"]:"r3", [M+"-05"]:"r2", [M+"-07"]:"r5",
       [M+"-10"]:"r4", [M+"-11"]:"r1", [M+"-14"]:"r2", [M+"-18"]:"r5", [M+"-24"]:"r3",
     },
-    pantry:{ rice:300, oliveoil:500, onion:3, salt:200, milk:500, banana:2, tomato:2, oats:200 },
-    manual:[],
-    ticked:{},
+    // shopping list: ingredientId -> quantity. Populated by "add recipe to list".
+    list:{ spaghetti:400, mincedbeef:400, tomatosauce:1, onion:1, oliveoil:20, salmon:300, rice:200, broccoli:200, lemon:1 },
+    ticked:{},   // ingredientId -> true (checked off this trip)
     stores:[
       {id:"s1", name:"Spar Center", order:["vegetables","fruit","dairy","meat","grains","pantry","sweets","drinks"]},
       {id:"s2", name:"Lidl Vič",   order:["drinks","sweets","pantry","grains","meat","dairy","fruit","vegetables"]},
@@ -588,54 +590,36 @@ function escapeHtml(s){
 /* ------------------------------------------------------------------ */
 /* Shopping computation                                                */
 /* ------------------------------------------------------------------ */
-function neededMap(){
-  const need = {};
-  const today = todayKey();
-  Object.keys(state.plan).forEach(key=>{
-    if(key < today) return;                       // past lunches: eaten already, not shopped for
-    const r = recipeById(state.plan[key]); if(!r) return;
-    r.items.forEach(it=>{ need[it.ing] = (need[it.ing]||0) + it.q; });
-  });
-  state.manual.forEach(m=>{ need[m.ing] = (need[m.ing]||0) + m.q; });
-  return need;
-}
 function shoppingItems(){
-  const need = neededMap();
   const items = [];
-  Object.keys(need).forEach(ing=>{
+  Object.keys(state.list).forEach(ing=>{
     if(!ING[ing]) return;
-    const remaining = need[ing] - (state.pantry[ing]||0) + (state.ticked[ing]||0);
-    if(remaining > 0.0001) items.push({ing, q:remaining, ticked: !!state.ticked[ing]});
+    const q = state.list[ing];
+    if(q > 0) items.push({ing, q, ticked: !!state.ticked[ing]});
   });
   return items;
 }
 function unticketedCount(){ return shoppingItems().filter(i=>!i.ticked).length; }
+function addRecipeToList(recipeId){
+  const r = recipeById(recipeId); if(!r) return 0;
+  let n = 0;
+  r.items.forEach(it=>{ if(ING[it.ing]){ state.list[it.ing] = (state.list[it.ing]||0) + it.q; n++; } });
+  save();
+  return n;
+}
+function removeListItem(ing){ delete state.list[ing]; delete state.ticked[ing]; save(); render(); }
+function clearList(){ state.list = {}; state.ticked = {}; save(); render(); }
 
 /* ------------------------------------------------------------------ */
 /* Actions                                                             */
 /* ------------------------------------------------------------------ */
 function setView(v){
-  // leaving the shopping list ends the trip: bought (ticked) items are already in the
-  // pantry, so clear them — next visit shows only what's still needed.
-  if(state.view==="shopping" && v!=="shopping") state.ticked={};
   if(v==="month") state.month = currentMonthStr();   // opening the plan snaps to this month
   state.view=v; closeModal(); save(); render();
 }
 
-function tickItem(ing){
-  const items = shoppingItems();
-  const found = items.find(i=>i.ing===ing);
-  if(!found || found.ticked) return;
-  state.ticked[ing] = found.q;
-  state.pantry[ing] = (state.pantry[ing]||0) + found.q;
-  save(); render();
-}
-function untickItem(ing){
-  const qty = state.ticked[ing]; if(qty===undefined) return;
-  state.pantry[ing] = Math.max(0, (state.pantry[ing]||0) - qty);
-  delete state.ticked[ing];
-  save(); render();
-}
+function tickItem(ing){ state.ticked[ing] = true; save(); render(); }        // check off (bought)
+function untickItem(ing){ delete state.ticked[ing]; save(); render(); }
 function reorderCategory(fromCat, toCat){
   if(fromCat===toCat) return;
   const store = activeStore();
@@ -644,11 +628,6 @@ function reorderCategory(fromCat, toCat){
   ord.splice(ord.indexOf(fromCat), 1);
   ord.splice(ord.indexOf(toCat), 0, fromCat);                  // drop before the target
   store.order = ord;
-  save(); render();
-}
-function pantryStep(ing, dir){
-  const step = (ING[ing].unit==="g"||ING[ing].unit==="ml") ? 50 : 1;
-  state.pantry[ing] = Math.max(0, (state.pantry[ing]||0) + dir*step);
   save(); render();
 }
 function assignSlot(slot, recipeId){
@@ -765,15 +744,9 @@ function renderMonth(){
 
 function renderRecipes(){
   const cards = state.recipes.map(r=>{
-    let missing = 0;
-    r.items.forEach(it=>{ if((state.pantry[it.ing]||0) < it.q) missing++; });
-    const chip = missing===0
-      ? `<span class="chip ok">${tr("allInKitchen")}</span>`
-      : `<span class="chip miss">${missing} ${tr("missing")}</span>`;
     return `<div class="card recipe" data-action="edit-recipe" data-id="${r.id}">
       <div class="rtop"><div class="rname">${escapeHtml(nameOf(r.name))}</div>${scoreBadge(biteScore(r))}</div>
       <div class="rmeta">${r.items.length} ${tr("ingsShort")} · ${r.servings} ${tr("servingsShort")}</div>
-      ${chip}
     </div>`;
   }).join("");
   return `<h2 class="viewtitle">${tr("recipesTitle")}</h2><p class="sub">${tr("recipesSub")}</p>
@@ -786,20 +759,16 @@ function renderKitchen(){
     const ings = Object.keys(ING).filter(id=>ING[id].cat===cat.id);
     if(!ings.length) return "";
     const rows = ings.map(id=>{
-      const ing = ING[id]; const qty = state.pantry[id]||0;
+      const ing = ING[id];
       const edit = ing.custom
         ? `<button class="iconmini" data-action="edit-ingredient" data-ing="${id}" title="${tr("editIngredient")}">✎</button>`
         : "";
       return `<div class="prow">
         ${badge(ing.ns, true)}
         <div class="pname">${escapeHtml(nameOf(ing.name))}</div>
-        <div class="pqty">${qtyUnit(id, qty)}</div>
+        <div class="punit">${unitLabel(ing.unit)}</div>
         ${edit}
         <button class="iconmini danger" data-action="ask-del-ingredient" data-ing="${id}" title="${tr("del")}">✕</button>
-        <div class="stepper">
-          <button data-action="pantry" data-ing="${id}" data-dir="-1">−</button>
-          <button data-action="pantry" data-ing="${id}" data-dir="1">+</button>
-        </div>
       </div>`;
     }).join("");
     return `<div class="catgroup"><div class="cathead">${cat.emoji} ${cat[state.lang]}</div>${rows}</div>`;
@@ -824,11 +793,12 @@ function renderShopping(){
     return `<div class="shoptools">${storeSel}</div><div class="empty">${tr("emptyList")}</div>`;
   }
 
-  // store selector + progress bar share one compact row
+  // store selector + progress bar + clear, one compact row
   const tools = `<div class="shoptools">
     ${storeSel}
     <div class="progressbar"><div class="progressfill" style="width:${pct}%;"></div></div>
     <span class="progresslabel">${done}/${total}</span>
+    <button class="iconmini danger" data-action="clear-list" title="${tr("clearList")}">🗑</button>
   </div>`;
 
   // group by category
@@ -850,6 +820,7 @@ function renderShopping(){
         ${badge(ing.ns, true)}
         <div class="sname">${escapeHtml(nameOf(ing.name))}</div>
         <div class="sqty">${qtyUnit(it.ing, it.q)}</div>
+        <button class="iconmini rm-item" data-action="remove-item" data-ing="${it.ing}" title="${tr("removeItem")}">✕</button>
       </div>`;
     }).join("");
     return `<div class="catgroup" data-cat="${cat}">
@@ -869,6 +840,11 @@ function openModal(html){ overlay.innerHTML = `<div class="modal">${html}</div>`
 function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; syncModalOpen=false; }
 
 function openSlotModal(slot){
+  const rid = state.plan[slot];
+  const r = rid ? recipeById(rid) : null;
+  if(r){ openSlotActions(slot, r); } else { openSlotPicker(slot); }
+}
+function openSlotPicker(slot){
   const rows = state.recipes.map(r=>
     `<div class="ritem" data-action="assign" data-slot="${slot}" data-recipe="${r.id}">
       ${scoreBadge(biteScore(r), true)}<div class="rn">${escapeHtml(nameOf(r.name))}</div>
@@ -878,6 +854,19 @@ function openSlotModal(slot){
   openModal(`<h3>${tr("chooseRecipe")}</h3><div class="rlist">${rows}</div>
     <div class="modalfoot"><div class="grow">${clear}</div>
     <button class="btn ghost" data-action="close">${tr("cancel")}</button></div>`);
+}
+function openSlotActions(slot, r, note){
+  openModal(`
+    <h3>${scoreBadge(biteScore(r), true)}<span class="grow">${escapeHtml(nameOf(r.name))}</span></h3>
+    <p class="fhint" style="margin:0 0 12px;">${r.items.length} ${tr("ingsShort")} · ${r.servings} ${tr("servingsShort")}</p>
+    ${note ? `<div class="tip" style="margin:0 0 12px;">${note}</div>` : ""}
+    <button class="btn" style="width:100%; margin-bottom:8px;" data-action="add-to-list" data-slot="${slot}" data-recipe="${r.id}">🛒 ${tr("addToList")}</button>
+    <div class="modalfoot">
+      <button class="btn ghost danger" data-action="assign" data-slot="${slot}" data-recipe="">${tr("clearSlot")}</button>
+      <div class="grow"></div>
+      <button class="btn ghost" data-action="slot-change" data-slot="${slot}">${tr("changeMeal")}</button>
+      <button class="btn ghost" data-action="close">${tr("done")}</button>
+    </div>`);
 }
 
 /* Recipe editor uses a temp `editing` object */
@@ -955,29 +944,6 @@ function deleteRecipe(id){
   closeModal(); save(); render();
 }
 
-function openManualModal(){
-  const opts = CATS.map(cat=>{
-    const list = Object.keys(ING).filter(id=>ING[id].cat===cat.id);
-    return `<optgroup label="${cat.emoji} ${cat[state.lang]}">`+
-      list.map(id=>`<option value="${id}">${escapeHtml(nameOf(ING[id].name))}</option>`).join("")+`</optgroup>`;
-  }).join("");
-  openModal(`<h3>${tr("addItem")}</h3>
-    <div class="field"><label>${tr("ingredient")}</label><select id="mi-ing">${opts}</select></div>
-    <div class="field"><label>${tr("quantity")}</label><input id="mi-q" type="number" min="0" step="any" value="1"></div>
-    <div class="modalfoot"><div class="grow"></div>
-      <button class="btn ghost" data-action="close">${tr("cancel")}</button>
-      <button class="btn" data-action="save-manual">${tr("save")}</button></div>`);
-}
-function saveManual(){
-  const ing = overlay.querySelector("#mi-ing").value;
-  const q = parseFloat(overlay.querySelector("#mi-q").value)||0;
-  if(q>0){
-    const ex = state.manual.find(m=>m.ing===ing);
-    if(ex) ex.q += q; else state.manual.push({ing, q});
-  }
-  closeModal(); save(); render();
-}
-
 /* Ingredient add/edit (Kitchen) — manual Nutri-Score */
 let editingIng = null;
 function defaultG(unit){ return unit==="pcs" ? 100 : unit==="can" ? 400 : 1; }
@@ -998,7 +964,6 @@ function captureIngredientForm(){
   if(q("#ing-unit")) editingIng.unit = q("#ing-unit").value;
   if(editingIng.unit==="g" || editingIng.unit==="ml") editingIng.g = 1;
   else if(q("#ing-g")) editingIng.g = parseFloat(q("#ing-g").value) || defaultG(editingIng.unit);
-  if(q("#ing-qty")) editingIng.qty = parseFloat(q("#ing-qty").value) || 0;
 }
 function renderIngredientModal(){
   const catOpts = CATS.map(c=>`<option value="${c.id}" ${c.id===editingIng.cat?"selected":""}>${c.emoji} ${c[state.lang]}</option>`).join("");
@@ -1013,15 +978,13 @@ function renderIngredientModal(){
     <button type="button" class="linkbtn" data-action="auto-score" ${editingIng.nsBusy?"disabled":""}>${tr("autoScore")}</button>
     ${editingIng.nsStatus?`<div class="fhint">${escapeHtml(editingIng.nsStatus)}</div>`:""}
   </div>`;
-  const qtyField = editingIng.id ? "" : `<div class="field"><label>${tr("quantityAtHome")}</label>
-    <input id="ing-qty" type="number" min="0" step="any" value="${editingIng.qty}"></div>`;
   const delBtn = editingIng.id ? `<button class="btn danger" data-action="ask-del-ingredient" data-ing="${editingIng.id}">${tr("del")}</button>` : "";
   openModal(`
     <h3>${badge(editingIng.ns)}<span class="grow">${editingIng.id?tr("editIngredient"):tr("newIngredient").replace(/^\+ /,"")}</span></h3>
     <div class="field"><label>${tr("name")}</label><input id="ing-name" type="text" value="${escapeHtml(editingIng.name)}"></div>
     <div class="field"><label>${tr("category")}</label><select id="ing-cat">${catOpts}</select></div>
     <div class="field"><label>${tr("unit")}</label><select id="ing-unit">${unitOpts}</select></div>
-    ${gField}${nsPick}${qtyField}
+    ${gField}${nsPick}
     <div class="modalfoot">${delBtn}<div class="grow"></div>
       <button class="btn ghost" data-action="close">${tr("cancel")}</button>
       <button class="btn" data-action="save-ingredient">${tr("save")}</button></div>`);
@@ -1067,7 +1030,6 @@ function saveIngredient(){
     const id = "c"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
     const ing = {name:{en:name, sl:name}, cat:editingIng.cat, unit:editingIng.unit, g, ns, custom:true};
     ING[id] = ing; state.customIng[id] = ing;
-    if(editingIng.qty>0) state.pantry[id] = editingIng.qty;
   }
   editingIng = null; closeModal(); save(); render();
 }
@@ -1087,8 +1049,7 @@ function deleteIngredient(id){
   delete ING[id];
   if(wasCustom) delete state.customIng[id];
   else { if(!state.hiddenIng.includes(id)) state.hiddenIng.push(id); }   // built-in: remember it's gone
-  delete state.pantry[id]; delete state.ticked[id];
-  state.manual = state.manual.filter(m=>m.ing!==id);
+  delete state.list[id]; delete state.ticked[id];
   state.recipes.forEach(r=>{ r.items = r.items.filter(it=>it.ing!==id); });
   editingIng = null; closeModal(); save(); render();
 }
@@ -1378,9 +1339,12 @@ document.addEventListener("click", e=>{
     case "rm-ing": captureRecipeForm(); editing.items.splice(parseInt(el.dataset.i),1); renderRecipeModal(); break;
     case "save-recipe": saveRecipe(); break;
     case "del-recipe": deleteRecipe(el.dataset.id); break;
-    case "pantry": pantryStep(el.dataset.ing, parseInt(el.dataset.dir)); break;
+    case "slot-change": openSlotPicker(el.dataset.slot); break;
+    case "add-to-list": { const n=addRecipeToList(el.dataset.recipe); const r=recipeById(el.dataset.recipe); openSlotActions(el.dataset.slot, r, tr("addedToList").replace("{n}", n)); render(); break; }
     case "tick": tickItem(el.dataset.ing); break;
     case "untick": untickItem(el.dataset.ing); break;
+    case "remove-item": removeListItem(el.dataset.ing); break;
+    case "clear-list": clearList(); break;
     case "new-ingredient": openIngredientModal(null); break;
     case "edit-ingredient": openIngredientModal(el.dataset.ing); break;
     case "pick-ns": captureIngredientForm(); editingIng.ns = el.dataset.ns; renderIngredientModal(); break;

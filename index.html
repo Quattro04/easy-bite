@@ -236,7 +236,7 @@
   .shoptools select.store{flex:none;}
   select.store, select.sel{
     border:1px solid var(--border); background:var(--card); color:var(--text);
-    border-radius:10px; padding:9px 12px; font-size:14px; font-family:inherit;
+    border-radius:10px; padding:9px 12px; font-size:16px; font-family:inherit;
   }
   .empty{color:var(--muted); text-align:center; padding:40px 20px;}
   /* modal */
@@ -255,7 +255,7 @@
   .field label{display:block; font-size:13px; color:var(--muted); margin-bottom:5px; font-weight:600;}
   .field input, .field select{
     width:100%; border:1px solid var(--border); background:var(--bg); color:var(--text);
-    border-radius:10px; padding:9px 11px; font-size:14px; font-family:inherit;
+    border-radius:10px; padding:9px 11px; font-size:16px; font-family:inherit;
   }
   .irow{display:flex; gap:6px; align-items:center; margin-bottom:6px;}
   .irow select{flex:1;}
@@ -283,10 +283,11 @@
     padding:8px 14px; border-radius:999px; font-size:13px; font-weight:600; white-space:nowrap; transition:.12s;}
   .pick-chip.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .pick-metric{flex:none; font-weight:700; font-size:15px; color:var(--accent); min-width:22px; text-align:right;}
+  .pick-cat{flex:none; font-size:16px;}
   .linkbtn{border:none; background:transparent; color:var(--accent); font-weight:600; font-size:14px; padding:6px 0;}
   .bigtext{width:100%; min-height:120px; max-height:230px; border:1px solid var(--border); background:var(--bg);
     color:var(--text); border-radius:10px; padding:10px; font-family:ui-monospace,Menlo,Consolas,monospace;
-    font-size:12px; line-height:1.4; resize:vertical; box-sizing:border-box;}
+    font-size:16px; line-height:1.4; resize:vertical; box-sizing:border-box;}
   @media(max-width:560px){
     .calgrid{gap:3px;} .dowrow{gap:3px;}
     .mcell{min-height:64px; padding:4px; border-radius:8px;}
@@ -406,6 +407,7 @@ const T = {
     lunch:"Lunch", today:"Today",
     ratings:"Ratings (1–10)", ease:"Ease", taste:"Taste", health:"Health",
     searchRecipes:"Search recipes…", sortBy:"Sort", scoreShort:"Score", noRecipeMatch:"No recipes match.",
+    searchIngredient:"Search ingredients…", noIngMatch:"No ingredients match.",
     recipesTitle:"Recipes", recipesSub:"Your dishes and their BiteScore.",
     kitchenTitle:"Ingredients", kitchenSub:"Your ingredient catalog and Nutri-Scores.",
     shoppingTitle:"Shopping list", shoppingSub:"Add recipes from the Plan, tick items as you buy.",
@@ -454,6 +456,7 @@ const T = {
     lunch:"Kosilo", today:"Danes",
     ratings:"Ocene (1–10)", ease:"Enostavnost", taste:"Okus", health:"Zdravje",
     searchRecipes:"Išči recepte…", sortBy:"Razvrsti", scoreShort:"Ocena", noRecipeMatch:"Ni ujemajočih receptov.",
+    searchIngredient:"Išči sestavine…", noIngMatch:"Ni ujemajočih sestavin.",
     recipesTitle:"Recepti", recipesSub:"Tvoje jedi in njihov BiteScore.",
     kitchenTitle:"Sestavine", kitchenSub:"Katalog sestavin in Nutri-ocene.",
     shoppingTitle:"Nakupovalni seznam", shoppingSub:"Dodaj recepte iz načrta, odkljukaj kar kupiš.",
@@ -1017,6 +1020,32 @@ function deleteRecipe(id){
   closeModal(); save(); render();
 }
 
+/* Searchable ingredient picker used by the recipe editor's "Add ingredient" */
+let ingPickQ = "";
+function openRecipeIngPicker(){ ingPickQ = ""; renderRecipeIngPicker(); }
+function recipeIngListHTML(){
+  const q = ingPickQ.trim().toLowerCase();
+  let ids = Object.keys(ING);
+  if(q) ids = ids.filter(id => (ING[id].name.en+" "+ING[id].name.sl).toLowerCase().includes(q));
+  ids.sort((a,b)=>{
+    const ca=CAT_ORDER.indexOf(ING[a].cat), cb=CAT_ORDER.indexOf(ING[b].cat);
+    return ca!==cb ? ca-cb : nameOf(ING[a].name).localeCompare(nameOf(ING[b].name));
+  });
+  const rows = ids.map(id=>{
+    const ing=ING[id];
+    return `<div class="ritem" data-action="pick-recipe-ing" data-ing="${id}">
+      ${badge(ing.ns,true)}<div class="rn">${escapeHtml(nameOf(ing.name))}</div>
+      <span class="pick-cat">${catMeta(ing.cat).emoji}</span>
+    </div>`;
+  }).join("");
+  return rows || `<div class="empty" style="padding:24px 8px;">${tr("noIngMatch")}</div>`;
+}
+function renderRecipeIngPicker(){
+  openModal(`<h3><span class="grow">${tr("addIngredient").replace(/^\+\s*/,"")}</span><button class="modal-x" data-action="recipe-ing-back" aria-label="${tr("cancel")}">✕</button></h3>
+    <input id="ingp-search" class="pick-search" type="text" placeholder="${tr("searchIngredient")}" value="${escapeHtml(ingPickQ)}" autocomplete="off">
+    <div class="rlist" id="ingp-list">${recipeIngListHTML()}</div>`);
+}
+
 /* Ingredient add/edit (Kitchen) — manual Nutri-Score */
 let editingIng = null;
 function defaultG(unit){ return unit==="pcs" ? 100 : unit==="can" ? 400 : 1; }
@@ -1408,7 +1437,9 @@ document.addEventListener("click", e=>{
     case "assign": assignSlot(el.dataset.slot, el.dataset.recipe||""); break;
     case "new-recipe": openRecipeModal(null); break;
     case "edit-recipe": openRecipeModal(el.dataset.id); break;
-    case "add-ing": captureRecipeForm(); editing.items.push({ing:Object.keys(ING)[0], q:1}); renderRecipeModal(); break;
+    case "add-ing": captureRecipeForm(); openRecipeIngPicker(); break;
+    case "pick-recipe-ing": { const id=el.dataset.ing; const u=ING[id].unit; editing.items.push({ing:id, q:(u==="g"||u==="ml")?100:1}); renderRecipeModal(); break; }
+    case "recipe-ing-back": renderRecipeModal(); break;
     case "rm-ing": captureRecipeForm(); editing.items.splice(parseInt(el.dataset.i),1); renderRecipeModal(); break;
     case "save-recipe": saveRecipe(); break;
     case "del-recipe": deleteRecipe(el.dataset.id); break;
@@ -1480,6 +1511,11 @@ document.addEventListener("input", e=>{
   if(e.target.id==="pick-search" && pickerCtx){
     pickerCtx.q = e.target.value;
     const lst = document.getElementById("pick-list"); if(lst) lst.innerHTML = pickListHTML();
+    return;
+  }
+  if(e.target.id==="ingp-search"){
+    ingPickQ = e.target.value;
+    const lst = document.getElementById("ingp-list"); if(lst) lst.innerHTML = recipeIngListHTML();
     return;
   }
   const sl = e.target.closest && e.target.closest('[data-rate]');

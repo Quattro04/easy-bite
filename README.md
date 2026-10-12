@@ -52,6 +52,10 @@ Without setup the app runs fully local. To enable sign-in and shared households:
    `SUPABASE_URL` / `SUPABASE_ANON_KEY` at the top of the accounts section in `index.html`,
    then deploy.
 
+**Optional — invite-only sign-ups:** run [`supabase/allowlist.sql`](supabase/allowlist.sql) with
+your own email addresses filled in. Only listed emails can create an account; add more later with
+`insert into public.signup_allowlist values ('someone@example.com');`.
+
 In the app: **⋯ → Account** → create an account → **Create a group** → **Share invite**.
 Anyone who opens the invite link (or enters the code) and signs in joins the household.
 

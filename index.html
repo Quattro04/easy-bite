@@ -463,6 +463,7 @@ const T = {
     syncSignedInAs:"Signed in as", syncSigningIn:"Signing in…", syncAuthError:"Couldn't sign in — check the email and password.",
     checkEmail:"Almost there — open the link we emailed you to confirm, then sign in.",
     alreadyReg:"That email already has an account — sign in instead.",
+    notAllowed:"This email isn’t on the invite list — ask the app owner to add it.",
     authNeed:"Enter an email and a password (at least 6 characters).",
     yourGroups:"Your groups", createGroup:"Create a group", groupNamePh:"e.g. Home", create:"Create",
     joinGroup:"Join with a code", codePh:"Invite code", join:"Join",
@@ -519,6 +520,7 @@ const T = {
     syncSignedInAs:"Prijavljen kot", syncSigningIn:"Prijavljanje…", syncAuthError:"Prijava ni uspela — preveri e-pošto in geslo.",
     checkEmail:"Še korak — odpri povezavo, ki smo ti jo poslali po e-pošti, nato se prijavi.",
     alreadyReg:"Za ta e-naslov račun že obstaja — prijavi se.",
+    notAllowed:"Ta e-naslov ni na seznamu povabljenih — prosi lastnika aplikacije, naj ga doda.",
     authNeed:"Vnesi e-pošto in geslo (vsaj 6 znakov).",
     yourGroups:"Tvoje skupine", createGroup:"Ustvari skupino", groupNamePh:"npr. Doma", create:"Ustvari",
     joinGroup:"Pridruži se s kodo", codePh:"Koda povabila", join:"Pridruži se",
@@ -1530,7 +1532,8 @@ async function cloudAuth(email, pw, isNew){
     : await sb.auth.signInWithPassword({email, password:pw});
   if(res.error){
     const m = res.error.message || "";
-    groupMsg = /already/i.test(m) ? tr("alreadyReg") : /confirm/i.test(m) ? tr("checkEmail") : isNew ? m : tr("syncAuthError");
+    groupMsg = /already/i.test(m) ? tr("alreadyReg") : /confirm/i.test(m) ? tr("checkEmail")
+      : /database error|not_allowed/i.test(m) ? tr("notAllowed") : isNew ? m : tr("syncAuthError");
   } else if(isNew && !res.data.session){
     groupMsg = tr("checkEmail");
   } else groupMsg = "";

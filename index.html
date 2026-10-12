@@ -1251,8 +1251,8 @@ function doImport(){
 /* ------------------------------------------------------------------ */
 // From Supabase → Project Settings → API. Both values are safe to publish
 // (access is enforced by the row-level-security rules in supabase/schema.sql).
-const SUPABASE_URL = "";
-const SUPABASE_ANON_KEY = "";
+const SUPABASE_URL = "https://gczhaagsvgkfoyseqmuj.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_6PkgZlDcXYweRkDEokJvzg_YD9IMplh";
 const cloudEnabled = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
 let sb = null;                 // supabase client

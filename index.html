@@ -284,6 +284,25 @@
   .pick-chip.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .pick-metric{flex:none; font-weight:700; font-size:15px; color:var(--accent); min-width:22px; text-align:right;}
   .pick-cat{flex:none; font-size:16px;}
+  /* account / household modal */
+  .glabel{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin:16px 0 8px;}
+  .ginrow{display:flex; gap:8px; align-items:center;}
+  .ginrow .pick-search{margin:0; flex:1; min-width:0;}
+  .gcode{font-size:26px; font-weight:800; letter-spacing:4px; text-align:center; padding:12px; margin-bottom:10px;
+    border:1px dashed var(--border); border-radius:12px; background:var(--bg); font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .gmembers{display:flex; flex-direction:column; gap:6px;}
+  .gmem{padding:10px 12px; border:1px solid var(--border); border-radius:10px; font-size:14px; overflow-wrap:anywhere;}
+  .gmsg{margin:10px 0 0; font-size:14px; font-weight:600; color:var(--accent);}
+  .gstatus{font-size:13px; color:var(--muted); margin:-6px 0 4px;}
+  .gstatus[data-s="synced"]{color:var(--ns-a);}
+  .gstatus[data-s="offline"]{color:var(--ns-e);}
+  /* sync dot on the ⋯ button while in a household */
+  #menubtn{position:relative;}
+  #menubtn::after{content:""; position:absolute; top:2px; right:2px; width:9px; height:9px; border-radius:50%;
+    border:2px solid var(--card); display:none;}
+  #menubtn[data-cloud="synced"]::after{display:block; background:var(--ns-a);}
+  #menubtn[data-cloud="syncing"]::after, #menubtn[data-cloud="loading"]::after{display:block; background:var(--ns-c);}
+  #menubtn[data-cloud="offline"]::after{display:block; background:var(--ns-e);}
   .linkbtn{border:none; background:transparent; color:var(--accent); font-weight:600; font-size:14px; padding:6px 0;}
   .bigtext{width:100%; min-height:120px; max-height:230px; border:1px solid var(--border); background:var(--bg);
     color:var(--text); border-radius:10px; padding:10px; font-family:ui-monospace,Menlo,Consolas,monospace;
@@ -437,17 +456,24 @@ const T = {
     importHint:"Paste a backup or choose a file, then Restore. This replaces all data on this device.",
     importPlaceholder:"Paste backup text here…", importBad:"That doesn't look like a valid EasyBite backup.",
     downloadFile:"Download file", copy:"Copy", copied:"Copied!", done:"Done", restore:"Restore",
-    cloudSync:"Cloud sync", syncTitle:"Cloud sync",
-    syncSetupHint:"Paste your free Firebase project config to sync automatically across devices. Setup steps are in the notes below the app.",
-    syncConfigPlaceholder:"Paste firebaseConfig { … } here",
-    connect:"Connect", syncEmail:"Email", syncPassword:"Password",
-    signIn:"Sign in", createAccount:"Create account", signOut:"Sign out", disconnect:"Disconnect",
-    syncSignedInAs:"Signed in as",
-    syncConnecting:"Connecting…", syncSigningIn:"Signing in…", syncSynced:"✓ Synced", syncSyncing:"Syncing…",
-    syncError:"Sync error — will retry.", syncBadConfig:"That config didn't parse. Paste the whole firebaseConfig object.",
-    syncAuthError:"Couldn't sign in — check the email and password.",
-    syncMergeTitle:"Cloud data found", syncMergeHint:"This account already has saved data. Which copy do you want to keep?",
-    syncUseCloud:"Use cloud data", syncUploadLocal:"Upload this device",
+    account:"Account", groupTitle:"Household",
+    accountHint:"Sign in to share your plan, recipes and shopping list with your household — changes show up live on everyone's phone.",
+    syncEmail:"Email", syncPassword:"Password",
+    signIn:"Sign in", createAccount:"Create account", signOut:"Sign out",
+    syncSignedInAs:"Signed in as", syncSigningIn:"Signing in…", syncAuthError:"Couldn't sign in — check the email and password.",
+    checkEmail:"Almost there — open the link we emailed you to confirm, then sign in.",
+    alreadyReg:"That email already has an account — sign in instead.",
+    authNeed:"Enter an email and a password (at least 6 characters).",
+    yourGroups:"Your groups", createGroup:"Create a group", groupNamePh:"e.g. Home", create:"Create",
+    joinGroup:"Join with a code", codePh:"Invite code", join:"Join",
+    inviteCode:"Invite code", shareInvite:"Share invite", linkCopied:"Invite link copied!",
+    inviteText:"Join my EasyBite group",
+    members:"Members", you:"you", switchGroup:"Switch to", personal:"Personal (only this device)",
+    leaveGroup:"Leave group", leaveConfirm:"Tap again to leave",
+    badCode:"That invite code didn't work.", groupError:"Something went wrong — try again.",
+    groupNameNeeded:"Give the group a name.", signInToJoin:"Sign in or create an account to join the group.",
+    noServer:"Can't reach the server — check your connection.",
+    statusSynced:"✓ Up to date", statusSyncing:"Syncing…", statusLoading:"Loading…", statusOffline:"Offline — changes will sync when you're back online",
   },
   sl:{
     week:"Načrt", recipes:"Recepti", kitchen:"Sestavine", shopping:"Nakup", theme:"Videz",
@@ -486,17 +512,24 @@ const T = {
     importHint:"Prilepi kopijo ali izberi datoteko, nato Obnovi. To zamenja vse podatke na tej napravi.",
     importPlaceholder:"Sem prilepi besedilo varnostne kopije…", importBad:"To ni videti kot veljavna EasyBite kopija.",
     downloadFile:"Prenesi datoteko", copy:"Kopiraj", copied:"Kopirano!", done:"Končano", restore:"Obnovi",
-    cloudSync:"Sinhronizacija", syncTitle:"Sinhronizacija v oblak",
-    syncSetupHint:"Prilepi konfiguracijo brezplačnega Firebase projekta za samodejno sinhronizacijo med napravami. Navodila so v opombah pod aplikacijo.",
-    syncConfigPlaceholder:"Sem prilepi firebaseConfig { … }",
-    connect:"Poveži", syncEmail:"E-pošta", syncPassword:"Geslo",
-    signIn:"Prijava", createAccount:"Ustvari račun", signOut:"Odjava", disconnect:"Prekini povezavo",
-    syncSignedInAs:"Prijavljen kot",
-    syncConnecting:"Povezovanje…", syncSigningIn:"Prijavljanje…", syncSynced:"✓ Sinhronizirano", syncSyncing:"Sinhroniziram…",
-    syncError:"Napaka sinhronizacije — poskusim znova.", syncBadConfig:"Konfiguracije ni bilo mogoče prebrati. Prilepi celoten firebaseConfig.",
-    syncAuthError:"Prijava ni uspela — preveri e-pošto in geslo.",
-    syncMergeTitle:"Najdeni podatki v oblaku", syncMergeHint:"Ta račun že ima shranjene podatke. Katero kopijo želiš obdržati?",
-    syncUseCloud:"Uporabi oblak", syncUploadLocal:"Naloži to napravo",
+    account:"Račun", groupTitle:"Gospodinjstvo",
+    accountHint:"Prijavi se, da deliš načrt, recepte in nakupovalni seznam z domačimi — spremembe se takoj pokažejo na vseh telefonih.",
+    syncEmail:"E-pošta", syncPassword:"Geslo",
+    signIn:"Prijava", createAccount:"Ustvari račun", signOut:"Odjava",
+    syncSignedInAs:"Prijavljen kot", syncSigningIn:"Prijavljanje…", syncAuthError:"Prijava ni uspela — preveri e-pošto in geslo.",
+    checkEmail:"Še korak — odpri povezavo, ki smo ti jo poslali po e-pošti, nato se prijavi.",
+    alreadyReg:"Za ta e-naslov račun že obstaja — prijavi se.",
+    authNeed:"Vnesi e-pošto in geslo (vsaj 6 znakov).",
+    yourGroups:"Tvoje skupine", createGroup:"Ustvari skupino", groupNamePh:"npr. Doma", create:"Ustvari",
+    joinGroup:"Pridruži se s kodo", codePh:"Koda povabila", join:"Pridruži se",
+    inviteCode:"Koda povabila", shareInvite:"Deli povabilo", linkCopied:"Povezava povabila kopirana!",
+    inviteText:"Pridruži se moji EasyBite skupini",
+    members:"Člani", you:"ti", switchGroup:"Preklopi na", personal:"Osebno (samo ta naprava)",
+    leaveGroup:"Zapusti skupino", leaveConfirm:"Pritisni še enkrat za izhod",
+    badCode:"Ta koda povabila ne deluje.", groupError:"Nekaj je šlo narobe — poskusi znova.",
+    groupNameNeeded:"Skupini daj ime.", signInToJoin:"Prijavi se ali ustvari račun, da se pridružiš skupini.",
+    noServer:"Strežnik ni dosegljiv — preveri povezavo.",
+    statusSynced:"✓ Posodobljeno", statusSyncing:"Sinhroniziram…", statusLoading:"Nalagam…", statusOffline:"Brez povezave — spremembe se sinhronizirajo, ko boš spet na spletu",
   },
 };
 
@@ -545,10 +578,6 @@ const LS_KEY = "easybite.v3";
 let state = load();
 state.month = currentMonthStr();   // the plan always opens on the current month
 let menuOpen = false;   // header overflow menu (language + theme); not persisted
-// --- cloud sync runtime (see sync block below); all null/false unless the user opts in ---
-let fbAuth = null, fbDb = null, syncUser = null, syncUnsub = null;
-let pushTimer = null, applyingRemote = false, syncStatus = "off";
-let syncModalOpen = false, justSignedIn = false, pendingRemoteJson = null;
 const DEVICE_ID = (function(){ try{ let d=localStorage.getItem("easybite.device"); if(!d){ d=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem("easybite.device", d); } return d; }catch(e){ return "dev"+Math.random(); } })();
 rebuildCatalog();   // ING = built-in seed + user's custom ingredients − deleted built-ins
 
@@ -579,8 +608,8 @@ function migrate(s){
   return s;
 }
 function save(){
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){ /* ignore */ }
-  syncSchedulePush();   // no-op unless cloud sync is active
+  cloudQueue();   // in a shared group: queue changed recipes/days/items for upload (no-op otherwise)
+  persist();      // local copy (personal data, or the group's offline cache)
 }
 
 /* ------------------------------------------------------------------ */
@@ -592,7 +621,7 @@ const catMeta = id => CATS.find(c=>c.id===id);
 const catLabel = id => { const c=catMeta(id); return c ? c[state.lang] : id; };
 const unitLabel = u => (UNITS[u] ? UNITS[u][state.lang] : u);
 const recipeById = id => state.recipes.find(r=>r.id===id);
-const activeStore = () => state.stores.find(s=>s.id===state.storeId) || state.stores[0];
+const activeStore = () => state.stores.find(s=>s.id===state.storeId) || state.stores[0] || defaultState().stores[0];
 const capFirst = s => s ? s.charAt(0).toUpperCase() + s.slice(1) : s;
 
 function fmtQty(q){
@@ -712,8 +741,9 @@ function renderHeader(){
     </div>
     <button class="menuitem" data-action="export">⬇️ ${tr("exportData")}</button>
     <button class="menuitem" data-action="import">⬆️ ${tr("importData")}</button>
-    <button class="menuitem" data-action="sync">☁️ ${tr("cloudSync")}${syncActive() ? ` <span style="color:var(--ns-a);font-weight:700;">•</span>` : ""}</button>`;
+    ${cloudEnabled() ? `<button class="menuitem" data-action="group">👥 ${activeGroup ? escapeHtml(activeGroup.name) : tr("account")}</button>` : ""}`;
   menu.classList.toggle("open", menuOpen);
+  updateCloudDot();
 }
 
 /* ------------------------------------------------------------------ */
@@ -878,7 +908,7 @@ function renderShopping(){
 /* ------------------------------------------------------------------ */
 const overlay = document.getElementById("overlay");
 function openModal(html){ overlay.innerHTML = `<div class="modal">${html}</div>`; overlay.classList.add("on"); }
-function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; syncModalOpen=false; pickerCtx=null; }
+function closeModal(){ overlay.classList.remove("on"); overlay.innerHTML=""; editing=null; editingIng=null; groupModalOpen=false; pickerCtx=null; }
 
 function openSlotModal(slot){
   const rid = state.plan[slot];
@@ -1004,10 +1034,12 @@ function saveRecipe(){
   const name = editing.name.trim() || (state.lang==="sl"?"Recept":"Recipe");
   const items = editing.items.filter(it=>it.q>0);
   const rt = {ease:editing.ease, taste:editing.taste, health:editing.health};
-  if(editing.id){
+  if(editing.id && recipeById(editing.id)){
     const r = recipeById(editing.id);
     r.name = {en:name, sl:name}; r.servings=editing.servings; r.items=items;
     r.ease=rt.ease; r.taste=rt.taste; r.health=rt.health;
+  }else if(editing.id){
+    state.recipes.push(Object.assign({id:editing.id, name:{en:name, sl:name}, servings:editing.servings, items}, rt));
   }else{
     const id = "r"+Date.now();
     state.recipes.push(Object.assign({id, name:{en:name, sl:name}, servings:editing.servings, items}, rt));
@@ -1215,187 +1247,451 @@ function doImport(){
 }
 
 /* ------------------------------------------------------------------ */
-/* Cloud sync (optional, Firebase). Off until the user pastes config.  */
+/* Accounts & shared groups (Supabase). Off until SUPABASE_* are set.  */
 /* ------------------------------------------------------------------ */
-const SYNC_KEY = "easybite.sync";
-function getSyncConfig(){ try{ const r=localStorage.getItem(SYNC_KEY); return r?JSON.parse(r):null; }catch(e){ return null; } }
-function setSyncConfig(c){ try{ localStorage.setItem(SYNC_KEY, JSON.stringify(c)); }catch(e){} }
-function clearSyncConfig(){ try{ localStorage.removeItem(SYNC_KEY); }catch(e){} }
-function syncActive(){ return !!(fbDb && syncUser); }
-function syncDocRef(){ return fbDb.collection("easybite").doc(syncUser.uid); }
-function stopSnapshot(){ if(syncUnsub){ try{ syncUnsub(); }catch(e){} syncUnsub=null; } }
-function setSyncStatus(s){ syncStatus=s; renderSyncIfOpen(); }
+// From Supabase → Project Settings → API. Both values are safe to publish
+// (access is enforced by the row-level-security rules in supabase/schema.sql).
+const SUPABASE_URL = "";
+const SUPABASE_ANON_KEY = "";
+const cloudEnabled = () => !!(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-function parseFirebaseConfig(text){
-  const s = String(text||"").trim();
-  const a = s.indexOf("{"), b = s.lastIndexOf("}");
-  if(a<0 || b<0) return null;
-  const obj = s.slice(a, b+1);
-  try{ return JSON.parse(obj); }catch(e){}
-  try{ return Function("return ("+obj+")")(); }catch(e){}   // tolerate JS object-literal syntax
+let sb = null;                 // supabase client
+let authUser = null;           // signed-in user (or null)
+let sessionUid;                // uid we last handled (undefined = not yet known)
+let groups = [];               // groups the user belongs to
+let activeGroup = null;        // {id,name,invite_code} or null = personal/local data
+let members = [];              // members of the active group
+let rtChannel = null;          // realtime subscription
+let lastSynced = new Map();    // "kind|key" -> stable JSON the server has (null = deleted)
+let outbox = new Map();        // "kind|key" -> data not yet confirmed by the server
+let inflight = new Map();      // rows currently being uploaded
+let flushTimer = null, flushing = false, pulling = false;
+let cloudStatus = "off";       // off | signedout | loading | syncing | synced | offline
+let groupModalOpen = false, groupMsg = "", leaveArmed = false;
+let needGroups = false;        // group list couldn't be fetched (offline) — retry when back online
+const PREF_KEYS = ["view","lang","theme","month","storeId"];   // per-device, never shared
+
+function loadScript(src){ return new Promise((res,rej)=>{ const el=document.createElement("script"); el.src=src; el.onload=()=>res(); el.onerror=()=>rej(new Error("load "+src)); document.head.appendChild(el); }); }
+function readKey(k){ try{ const r=localStorage.getItem(k); return r?JSON.parse(r):null; }catch(e){ return null; } }
+function writeKey(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+function pickPrefs(s){ const p={}; PREF_KEYS.forEach(k=>{ if(s[k]!==undefined) p[k]=s[k]; }); return p; }
+function emptyShared(){ return {recipes:[], plan:{}, list:{}, ticked:{}, customIng:{}, hiddenIng:[], stores:[]}; }
+function ensureStores(){ if(state.stores && state.stores.length) return false; state.stores = defaultState().stores; return true; }
+function stable(v){                       // JSON with sorted keys — jsonb reorders object keys
+  if(v===null || typeof v!=="object") return JSON.stringify(v);
+  if(Array.isArray(v)) return "["+v.map(stable).join(",")+"]";
+  return "{"+Object.keys(v).filter(k=>v[k]!==undefined).sort().map(k=>JSON.stringify(k)+":"+stable(v[k])).join(",")+"}";
+}
+
+/* state <-> rows: every recipe / planned day / list item / … is its own row */
+function sharedMap(s){
+  const m = new Map();
+  (s.recipes||[]).forEach(r=>m.set("recipe|"+r.id, r));
+  Object.keys(s.plan||{}).forEach(d=>m.set("plan|"+d, {r:s.plan[d]}));
+  Object.keys(s.list||{}).forEach(i=>m.set("list|"+i, {q:s.list[i], t:!!(s.ticked||{})[i]}));
+  Object.keys(s.customIng||{}).forEach(i=>m.set("ing|"+i, s.customIng[i]));
+  (s.hiddenIng||[]).forEach(i=>m.set("hidden|"+i, {h:1}));
+  (s.stores||[]).forEach(st=>m.set("store|"+st.id, st));
+  return m;
+}
+function applyEntry(kind, key, data){
+  const del = data===null || data===undefined;
+  const upsertById = (arr, obj)=>{ const i=arr.findIndex(x=>x.id===key);
+    if(del){ if(i>=0) arr.splice(i,1); } else { const o=Object.assign({}, obj, {id:key}); if(i>=0) arr[i]=o; else arr.push(o); } };
+  switch(kind){
+    case "recipe": upsertById(state.recipes, data); break;
+    case "store":  upsertById(state.stores, data); break;
+    case "plan":   if(del) delete state.plan[key]; else state.plan[key]=data.r; break;
+    case "list":
+      if(del){ delete state.list[key]; delete state.ticked[key]; }
+      else { state.list[key]=data.q; if(data.t) state.ticked[key]=true; else delete state.ticked[key]; }
+      break;
+    case "ing":    if(del) delete state.customIng[key]; else state.customIng[key]=Object.assign({}, data); break;
+    case "hidden": { const i=state.hiddenIng.indexOf(key); if(del){ if(i>=0) state.hiddenIng.splice(i,1); } else if(i<0) state.hiddenIng.push(key); break; }
+  }
+}
+
+/* local persistence: personal data under LS_KEY, each group cached separately */
+function persist(){
+  try{
+    if(activeGroup){
+      const g = activeGroup.id;
+      localStorage.setItem("easybite.g."+g, JSON.stringify(state));
+      localStorage.setItem("easybite.gs."+g, JSON.stringify([...lastSynced]));
+      const ob = new Map(inflight); outbox.forEach((d,k)=>ob.set(k,d));
+      localStorage.setItem("easybite.go."+g, JSON.stringify([...ob]));
+    } else {
+      localStorage.setItem(LS_KEY, JSON.stringify(state));
+    }
+  }catch(e){}
+}
+
+/* outgoing: diff the state against what the server has, queue changed rows */
+function cloudQueue(){
+  if(!activeGroup) return;
+  const cur = sharedMap(state);
+  cur.forEach((v,k)=>{ const j=stable(v); if(lastSynced.get(k)!==j){ outbox.set(k, v); lastSynced.set(k, j); } });
+  lastSynced.forEach((j,k)=>{ if(j!==null && !cur.has(k)){ outbox.set(k, null); lastSynced.set(k, null); } });
+  if(outbox.size){ if(cloudStatus==="synced") setCloudStatus("syncing"); clearTimeout(flushTimer); flushTimer = setTimeout(cloudFlush, 300); }
+}
+async function cloudFlush(){
+  if(!activeGroup || !sb || !authUser || flushing || !outbox.size) return;
+  flushing = true;
+  const gid = activeGroup.id;
+  inflight = outbox; outbox = new Map();
+  const rows = [...inflight].map(([k,data])=>{ const p=k.indexOf("|"); return {group_id:gid, kind:k.slice(0,p), key:k.slice(p+1), data, device:DEVICE_ID}; });
+  try{
+    for(let i=0; i<rows.length; i+=500){
+      const { error } = await sb.from("entries").upsert(rows.slice(i, i+500), {onConflict:"group_id,kind,key"});
+      if(error) throw error;
+    }
+    inflight = new Map();
+    if(activeGroup && activeGroup.id===gid){ persist(); setCloudStatus(outbox.size ? "syncing" : "synced"); }
+  }catch(e){
+    const failed = inflight; inflight = new Map();
+    if(activeGroup && activeGroup.id===gid){
+      failed.forEach((d,k)=>{ if(!outbox.has(k)) outbox.set(k,d); });
+      persist();
+      setCloudStatus("offline");
+      clearTimeout(flushTimer); flushTimer = setTimeout(cloudFlush, 8000);
+    } else {                                   // switched groups meanwhile: park them with their group
+      const ob = new Map(readKey("easybite.go."+gid)||[]); failed.forEach((d,k)=>{ if(!ob.has(k)) ob.set(k,d); });
+      writeKey("easybite.go."+gid, [...ob]);
+    }
+  }finally{
+    flushing = false;
+    if(outbox.size && cloudStatus!=="offline"){ clearTimeout(flushTimer); flushTimer = setTimeout(cloudFlush, 300); }
+  }
+}
+
+/* incoming: full pull (on enter / reconnect) and live row events */
+async function fetchEntries(gid){
+  const all = [], size = 1000;
+  for(let from=0;; from+=size){
+    const { data, error } = await sb.from("entries").select("kind,key,data").eq("group_id", gid).range(from, from+size-1);
+    if(error) throw error;
+    all.push(...data);
+    if(data.length < size) break;
+  }
+  return all;
+}
+function entityValue(kind, key){              // one entity as sharedMap() would produce it
+  switch(kind){
+    case "recipe": return state.recipes.find(r=>r.id===key) || null;
+    case "store":  return state.stores.find(s=>s.id===key) || null;
+    case "plan":   return key in state.plan ? {r:state.plan[key]} : null;
+    case "list":   return key in state.list ? {q:state.list[key], t:!!state.ticked[key]} : null;
+    case "ing":    return state.customIng[key] || null;
+    case "hidden": return state.hiddenIng.includes(key) ? {h:1} : null;
+  }
   return null;
 }
-function loadScript(src){ return new Promise((res,rej)=>{ const el=document.createElement("script"); el.src=src; el.onload=()=>res(); el.onerror=()=>rej(new Error("load "+src)); document.head.appendChild(el); }); }
-function loadFirebase(){
-  if(window.firebase && window.firebase.firestore) return Promise.resolve();
-  const base = "https://www.gstatic.com/firebasejs/10.12.2/";
-  return loadScript(base+"firebase-app-compat.js")
-    .then(()=>loadScript(base+"firebase-auth-compat.js"))
-    .then(()=>loadScript(base+"firebase-firestore-compat.js"));
+function takeRow(row){                         // returns true if state changed
+  const k = row.kind+"|"+row.key;
+  if(outbox.has(k) || inflight.has(k)) return false;   // our newer local change wins
+  const j = row.data===null ? null : stable(row.data);
+  if(lastSynced.has(k) && lastSynced.get(k)===j) return false;
+  applyEntry(row.kind, row.key, row.data);
+  const v = entityValue(row.kind, row.key);    // record it canonically so it isn't echoed back
+  lastSynced.set(k, v===null ? null : stable(v));
+  return true;
 }
-async function syncInit(){
-  const cfg = getSyncConfig(); if(!cfg) return;
-  await loadFirebase();
-  if(!firebase.apps.length) firebase.initializeApp(cfg);
-  fbAuth = firebase.auth(); fbDb = firebase.firestore();
-  if(!syncInit._bound){
-    syncInit._bound = true;
-    fbAuth.onAuthStateChanged(function(u){
-      syncUser = u || null;
-      if(syncUser){ syncStart(); } else { stopSnapshot(); setSyncStatus("signedout"); }
-      renderSyncIfOpen(); renderHeader();
-    });
-  }
+function afterRemote(changed){
+  if(!changed) return;
+  rebuildCatalog(); migrate(state);
+  persist(); scheduleRender();
 }
-async function syncConnect(text){
-  const cfg = parseFirebaseConfig(text);
-  if(!cfg || !cfg.apiKey || !cfg.projectId){ setSyncStatus("badconfig"); return; }
-  setSyncConfig(cfg);
-  setSyncStatus("connecting");
-  try{ await syncInit(); renderSyncIfOpen(); }
-  catch(e){ setSyncStatus("error"); }
-}
-async function syncAuth(email, pw, isNew){
-  if(!email || !pw){ setSyncStatus("autherror"); return; }
-  if(!fbAuth){ try{ await syncInit(); }catch(e){ setSyncStatus("error"); return; } }
-  if(!fbAuth){ setSyncStatus("error"); return; }
-  setSyncStatus("signingin"); justSignedIn = true;
+async function groupPull(gid){
+  if(!sb || !authUser || pulling) return;
+  pulling = true;
   try{
-    if(isNew) await fbAuth.createUserWithEmailAndPassword(email, pw);
-    else await fbAuth.signInWithEmailAndPassword(email, pw);
-  }catch(e){ justSignedIn=false; setSyncStatus("autherror"); }
+    const rows = await fetchEntries(gid);
+    if(!activeGroup || activeGroup.id!==gid) return;
+    let changed = false;
+    rows.forEach(r=>{ if(takeRow(r)) changed = true; });
+    if(ensureStores()){ changed = true; cloudQueue(); }
+    afterRemote(changed); persist();
+    setCloudStatus(outbox.size ? "syncing" : "synced");
+  }catch(e){ setCloudStatus("offline"); }
+  finally{ pulling = false; }
 }
-async function syncStart(){
-  if(!syncActive()) return;
-  const ref = syncDocRef();
-  setSyncStatus("connecting");
-  let snap; try{ snap = await ref.get(); }catch(e){ setSyncStatus("error"); return; }
-  const remote = snap.exists && snap.data() ? snap.data() : null;
-  const hasRemote = !!(remote && remote.json);
-  if(hasRemote && justSignedIn){        // first sign-in with existing cloud data → let the user pick
-    justSignedIn = false;
-    pendingRemoteJson = remote.json;
-    openSyncMergeModal();
-    return;
-  }
-  justSignedIn = false;
-  if(hasRemote) applyRemote(remote.json);   // reconnect: cloud is source of truth
-  else pushNow();                           // brand-new account: seed cloud from this device
-  subscribe(ref);
-  setSyncStatus("synced");
+function onRemote(payload){
+  const row = payload && payload.new;
+  if(!row || !activeGroup || row.group_id!==activeGroup.id || row.device===DEVICE_ID) return;
+  afterRemote(takeRow(row));
 }
-function subscribe(ref){
-  stopSnapshot();
-  syncUnsub = ref.onSnapshot(function(snap){
-    if(!snap.exists) return;
-    if(snap.metadata && snap.metadata.hasPendingWrites) return;   // our own not-yet-committed write
-    const d = snap.data(); if(!d || !d.json) return;
-    if(d.updatedBy === DEVICE_ID){ setSyncStatus("synced"); return; }  // our own change echoed back
-    applyRemote(d.json);                                          // change from another device
-    setSyncStatus("synced");
-  }, function(){ setSyncStatus("error"); });
-}
-function pushNow(){
-  if(!syncActive()) return;
-  setSyncStatus("syncing");
-  syncDocRef().set({ json: JSON.stringify(state), updatedBy: DEVICE_ID, updatedAt: Date.now() })
-    .then(function(){ setSyncStatus("synced"); })
-    .catch(function(){ setSyncStatus("error"); });
-}
-function syncSchedulePush(){
-  if(!syncActive() || applyingRemote) return;
-  clearTimeout(pushTimer);
-  pushTimer = setTimeout(pushNow, 800);   // debounce bursts of changes
-}
-function applyRemote(jsonStr){
-  let data; try{ data = JSON.parse(jsonStr); }catch(e){ return; }
-  if(!data || typeof data!=="object" || !Array.isArray(data.recipes)) return;
-  applyingRemote = true;
-  state = migrate(Object.assign(defaultState(), data));
-  rebuildCatalog();
-  try{ localStorage.setItem(LS_KEY, JSON.stringify(state)); }catch(e){}
-  applyingRemote = false;
-  render();
-}
-async function syncSignOut(){
-  stopSnapshot();
-  try{ if(fbAuth) await fbAuth.signOut(); }catch(e){}
-  syncUser = null; setSyncStatus("signedout"); renderSyncIfOpen(); renderHeader();
-}
-async function syncDisconnect(){
-  await syncSignOut();
-  clearSyncConfig(); fbAuth=null; fbDb=null;
-  setSyncStatus("off"); renderSyncIfOpen(); renderHeader();
+let renderQueued = false;
+function scheduleRender(){ if(renderQueued) return; renderQueued = true; requestAnimationFrame(()=>{ renderQueued = false; render(); renderGroupIfOpen(); }); }
+
+function unsubscribe(){ if(rtChannel && sb){ try{ sb.removeChannel(rtChannel); }catch(e){} } rtChannel = null; }
+function subscribeGroup(gid){
+  unsubscribe();
+  rtChannel = sb.channel("entries-"+gid)
+    .on("postgres_changes", {event:"*", schema:"public", table:"entries", filter:"group_id=eq."+gid}, onRemote)
+    .subscribe(status=>{
+      if(status==="SUBSCRIBED") groupPull(gid);                 // catch up anything missed while away
+      else if(status==="CHANNEL_ERROR" || status==="TIMED_OUT") setCloudStatus("offline");
+    });
 }
 
-/* Sync modals */
-function openSyncModal(){ menuOpen=false; syncModalOpen=true; if(getSyncConfig() && !fbAuth){ syncInit().catch(()=>setSyncStatus("error")); } renderSyncModal(); }
-function renderSyncIfOpen(){ if(syncModalOpen) renderSyncModal(); }
-function syncStatusText(){
-  const m = {connecting:tr("syncConnecting"), signingin:tr("syncSigningIn"), synced:tr("syncSynced"),
-    syncing:tr("syncSyncing"), error:tr("syncError"), badconfig:tr("syncBadConfig"), autherror:tr("syncAuthError")};
-  return m[syncStatus] || "";
-}
-function renderSyncModal(){
-  const cfg = getSyncConfig();
-  const status = syncStatusText();
-  const statusHTML = status ? `<div class="fhint" style="margin:8px 0 0;">${escapeHtml(status)}</div>` : "";
-  let body;
-  if(!cfg){
-    body = `<p class="fhint" style="margin:0 0 10px;">${tr("syncSetupHint")}</p>
-      <textarea id="sync-config" class="bigtext" placeholder="${tr("syncConfigPlaceholder")}"></textarea>
-      ${statusHTML}
-      <div class="modalfoot"><div class="grow"></div>
-        <button class="btn ghost" data-action="close">${tr("cancel")}</button>
-        <button class="btn" data-action="sync-connect">${tr("connect")}</button></div>`;
-  } else if(!syncUser){
-    body = `<div class="field"><label>${tr("syncEmail")}</label><input id="sync-email" type="email" autocomplete="username"></div>
-      <div class="field"><label>${tr("syncPassword")}</label><input id="sync-pass" type="password" autocomplete="current-password"></div>
-      ${statusHTML}
-      <div class="modalfoot">
-        <button class="btn ghost" data-action="sync-disconnect" title="${tr("disconnect")}">${tr("disconnect")}</button>
-        <div class="grow"></div>
-        <button class="btn ghost" data-action="sync-signup">${tr("createAccount")}</button>
-        <button class="btn" data-action="sync-signin">${tr("signIn")}</button></div>`;
+/* switching between personal data and groups */
+function activeKey(){ return authUser ? "easybite.ag."+authUser.id : null; }
+function setActiveGroupId(id){ const k=activeKey(); if(!k) return; if(id) writeKey(k, id); else try{ localStorage.removeItem(k); }catch(e){} }
+
+async function enterGroup(g, opts){
+  opts = opts || {};
+  if(!activeGroup || activeGroup.id!==g.id){
+    if(activeGroup) persist();
+    unsubscribe(); clearTimeout(flushTimer);
+    const prefs = pickPrefs(state);
+    activeGroup = g;
+    if(opts.seed){                             // brand-new group starts with my current data
+      lastSynced = new Map(); outbox = new Map();
+    } else {
+      const cached = readKey("easybite.g."+g.id);
+      state = migrate(Object.assign(defaultState(), emptyShared(), cached||{}, prefs));
+      lastSynced = new Map(readKey("easybite.gs."+g.id)||[]);
+      outbox = new Map(readKey("easybite.go."+g.id)||[]);
+      rebuildCatalog();
+    }
   } else {
-    body = `<p class="sub" style="margin:0 0 4px;">${tr("syncSignedInAs")}</p>
-      <p style="margin:0 0 4px; font-weight:600;">${escapeHtml(syncUser.email||"")}</p>
-      ${statusHTML || `<div class="fhint" style="margin:8px 0 0;">${tr("syncSynced")}</div>`}
-      <div class="modalfoot">
-        <button class="btn ghost" data-action="sync-disconnect">${tr("disconnect")}</button>
-        <div class="grow"></div>
-        <button class="btn" data-action="sync-signout">${tr("signOut")}</button></div>`;
+    activeGroup = Object.assign(activeGroup, g);
   }
-  openModal(`<h3>☁️ ${tr("syncTitle")}</h3>${body}`);
+  writeKey("easybite.lastGroup", {id:g.id, name:g.name, invite_code:g.invite_code});
+  setActiveGroupId(g.id);
+  if(opts.seed) cloudQueue();
+  persist(); render();
+  setCloudStatus("loading");
+  subscribeGroup(g.id);
+  await groupPull(g.id);
+  cloudFlush();
+  loadMembers();
 }
-function openSyncMergeModal(){
-  openModal(`<h3>${tr("syncMergeTitle")}</h3>
-    <p class="fhint" style="margin:0 0 12px;">${tr("syncMergeHint")}</p>
-    <div class="modalfoot">
-      <button class="btn ghost" data-action="sync-upload-local">${tr("syncUploadLocal")}</button>
-      <div class="grow"></div>
-      <button class="btn" data-action="sync-use-cloud">${tr("syncUseCloud")}</button></div>`);
+function leaveToLocal(){
+  if(activeGroup) persist();
+  unsubscribe(); clearTimeout(flushTimer);
+  const prefs = pickPrefs(state);
+  activeGroup = null; members = []; lastSynced = new Map(); outbox = new Map(); inflight = new Map();
+  try{ localStorage.removeItem("easybite.lastGroup"); }catch(e){}
+  state = Object.assign(load(), prefs);
+  rebuildCatalog(); render();
+  setCloudStatus(authUser ? "synced" : "signedout");
 }
-function syncMergeChoose(useCloud){
-  const ref = syncDocRef();
-  if(useCloud && pendingRemoteJson) applyRemote(pendingRemoteJson);
-  else pushNow();
-  pendingRemoteJson = null;
-  subscribe(ref);
-  setSyncStatus("synced");
-  closeModal();
-  if(syncModalOpen) renderSyncModal();
+function clearGroupCaches(){
+  try{ Object.keys(localStorage).forEach(k=>{ if(/^easybite\.(g|gs|go|ag)\./.test(k) || k==="easybite.lastGroup") localStorage.removeItem(k); }); }catch(e){}
 }
+
+/* auth + group actions */
+function takePendingJoin(){ const c=readKey("easybite.join"); try{ localStorage.removeItem("easybite.join"); }catch(e){} return c; }
+async function loadGroups(){
+  try{
+    const { data, error } = await sb.from("groups").select("id,name,invite_code,created_at").order("created_at");
+    if(error) return false;
+    groups = data || []; return true;
+  }catch(e){ return false; }
+}
+async function loadMembers(){
+  if(!activeGroup || !sb) return;
+  const { data } = await sb.from("group_members").select("user_id,email,joined_at").eq("group_id", activeGroup.id).order("joined_at");
+  members = data || []; renderGroupIfOpen();
+}
+async function handleSession(session){
+  const u = session ? session.user : null, uid = u ? u.id : null;
+  authUser = u;
+  if(uid === sessionUid) return;
+  sessionUid = uid;
+  if(!u){
+    if(activeGroup) leaveToLocal();
+    setCloudStatus("signedout"); renderHeader();
+    if(readKey("easybite.join")){ groupMsg = tr("signInToJoin"); openGroupModal(true); }
+    return;
+  }
+  setCloudStatus("loading");
+  if(!(await loadGroups())){                   // offline: keep showing the cached household, retry later
+    needGroups = true; setCloudStatus(activeGroup ? "offline" : "synced"); renderHeader(); renderGroupIfOpen(); return;
+  }
+  needGroups = false;
+  const pending = takePendingJoin();
+  if(pending){ await joinGroup(pending); return; }
+  const want = readKey(activeKey());
+  const g = groups.find(x=>x.id===want) || (activeGroup && groups.find(x=>x.id===activeGroup.id));
+  if(g) await enterGroup(g);
+  else { if(activeGroup) leaveToLocal(); setCloudStatus("synced"); }
+  renderHeader(); renderGroupIfOpen();
+}
+async function cloudAuth(email, pw, isNew){
+  if(!sb){ groupMsg = tr("noServer"); renderGroupIfOpen(); return; }
+  if(!email || !pw || pw.length < 6){ groupMsg = tr("authNeed"); renderGroupIfOpen(); return; }
+  groupMsg = tr("syncSigningIn"); renderGroupIfOpen();
+  const join = readKey("easybite.join");
+  const back = location.origin + location.pathname + (join ? "?join="+encodeURIComponent(join) : "");
+  const res = isNew
+    ? await sb.auth.signUp({email, password:pw, options:{emailRedirectTo:back}})
+    : await sb.auth.signInWithPassword({email, password:pw});
+  if(res.error){
+    const m = res.error.message || "";
+    groupMsg = /already/i.test(m) ? tr("alreadyReg") : /confirm/i.test(m) ? tr("checkEmail") : isNew ? m : tr("syncAuthError");
+  } else if(isNew && !res.data.session){
+    groupMsg = tr("checkEmail");
+  } else groupMsg = "";
+  renderGroupIfOpen();
+}
+async function cloudSignOut(){
+  leaveToLocal();
+  clearGroupCaches();
+  try{ await sb.auth.signOut(); }catch(e){}
+  authUser = null; sessionUid = null; groups = []; groupMsg = "";
+  setCloudStatus("signedout"); renderHeader(); renderGroupIfOpen();
+}
+async function createGroup(name){
+  name = (name||"").trim();
+  if(!name){ groupMsg = tr("groupNameNeeded"); renderGroupIfOpen(); return; }
+  const { data, error } = await sb.rpc("create_group", {p_name:name});
+  if(error || !data){ groupMsg = tr("groupError"); renderGroupIfOpen(); return; }
+  groups.push(data); groupMsg = "";
+  await enterGroup(data, {seed:true});
+  renderGroupIfOpen();
+}
+async function joinGroup(code){
+  code = (code||"").trim().toUpperCase();
+  if(!code) return;
+  const { data, error } = await sb.rpc("join_group", {p_code:code});
+  if(error || !data){ groupMsg = tr("badCode"); setCloudStatus(activeGroup ? cloudStatus : "synced"); openGroupModal(true); return; }
+  await loadGroups(); groupMsg = "";
+  await enterGroup(groups.find(g=>g.id===data.id) || data);
+  renderHeader(); renderGroupIfOpen();
+}
+async function switchGroup(id){ const g = groups.find(x=>x.id===id); if(g){ await enterGroup(g); renderGroupIfOpen(); } }
+function goPersonal(){ setActiveGroupId(null); leaveToLocal(); renderGroupIfOpen(); }
+async function leaveGroup(){
+  if(!activeGroup || !sb) return;
+  const gid = activeGroup.id;
+  const { error } = await sb.from("group_members").delete().eq("group_id", gid).eq("user_id", authUser.id);
+  if(error){ groupMsg = tr("groupError"); renderGroupIfOpen(); return; }
+  groups = groups.filter(g=>g.id!==gid);
+  setActiveGroupId(null); leaveToLocal();
+  ["g","gs","go"].forEach(p=>{ try{ localStorage.removeItem("easybite."+p+"."+gid); }catch(e){} });
+  renderGroupIfOpen();
+}
+async function shareInvite(){
+  if(!activeGroup) return;
+  const url = location.origin + location.pathname + "?join=" + activeGroup.invite_code;
+  const text = tr("inviteText") + " „" + activeGroup.name + "“";
+  if(navigator.share){
+    try{ await navigator.share({title:"EasyBite", text, url}); return; }
+    catch(e){ if(e && e.name==="AbortError") return; }
+  }
+  try{ await navigator.clipboard.writeText(url); groupMsg = tr("linkCopied"); }catch(e){ groupMsg = url; }
+  renderGroupIfOpen();
+}
+
+/* boot: invite links, cached group for instant/offline start, then connect */
+let cloudLoading = false;
+async function cloudInit(){
+  if(sb || cloudLoading) return;
+  cloudLoading = true;
+  try{ await loadScript("https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"); }
+  catch(e){ cloudLoading = false; setCloudStatus(activeGroup ? "offline" : "off"); return; }
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY,
+    {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:true, flowType:"implicit"}});
+  sb.auth.onAuthStateChange((event, session)=>{ setTimeout(()=>handleSession(session), 0); });
+  const { data } = await sb.auth.getSession();
+  await handleSession(data.session);
+  cloudLoading = false;
+}
+async function cloudResync(){
+  if(!sb) return cloudInit();
+  if(needGroups){ sessionUid = undefined; const { data } = await sb.auth.getSession(); return handleSession(data.session); }
+  if(activeGroup){ groupPull(activeGroup.id); cloudFlush(); }
+}
+function cloudBoot(){
+  try{
+    const p = new URLSearchParams(location.search), c = p.get("join");
+    if(c){ writeKey("easybite.join", c.trim().toUpperCase()); p.delete("join");
+      history.replaceState(null, "", location.pathname + (p.toString() ? "?"+p : "") + location.hash); }
+  }catch(e){}
+  if(!cloudEnabled()) return;
+  const last = readKey("easybite.lastGroup");
+  if(last && last.id){                       // show the household's cached data right away (works offline)
+    const prefs = pickPrefs(state);
+    activeGroup = last;
+    state = migrate(Object.assign(defaultState(), emptyShared(), readKey("easybite.g."+last.id)||{}, prefs));
+    lastSynced = new Map(readKey("easybite.gs."+last.id)||[]);
+    outbox = new Map(readKey("easybite.go."+last.id)||[]);
+    rebuildCatalog();
+    cloudStatus = "loading";
+  }
+  window.addEventListener("online", cloudResync);
+  document.addEventListener("visibilitychange", ()=>{ if(document.visibilityState==="visible") cloudResync(); });
+  cloudInit();
+}
+
+/* UI */
+function setCloudStatus(s){ cloudStatus = s; updateCloudDot(); renderGroupIfOpen(); }
+function updateCloudDot(){ const b = document.getElementById("menubtn"); if(b) b.dataset.cloud = activeGroup ? cloudStatus : ""; }
+function cloudStatusText(){
+  return {synced:tr("statusSynced"), syncing:tr("statusSyncing"), loading:tr("statusLoading"), offline:tr("statusOffline")}[cloudStatus] || "";
+}
+function openGroupModal(keepMsg){ menuOpen = false; groupModalOpen = true; leaveArmed = false; if(!keepMsg) groupMsg = ""; renderGroupModal(); }
+function renderGroupIfOpen(){ if(groupModalOpen) renderGroupModal(); }
+function renderGroupModal(){
+  const keep = {}; ["g-email","g-pass","g-name","g-code"].forEach(id=>{ const el=document.getElementById(id); if(el) keep[id]=el.value; });
+  const focusId = document.activeElement && document.activeElement.id;
+  const x = `<button class="modal-x" data-action="close" aria-label="${tr("cancel")}">✕</button>`;
+  const msg = groupMsg ? `<div class="gmsg">${escapeHtml(groupMsg)}</div>` : "";
+  let html;
+  if(!sb && !authUser){
+    html = `<h3><span class="grow">👥 ${tr("account")}</span>${x}</h3><p class="fhint">${cloudLoading ? tr("statusLoading") : tr("noServer")}</p>`;
+  } else if(!authUser){
+    html = `<h3><span class="grow">👥 ${tr("account")}</span>${x}</h3>
+      <p class="fhint" style="margin:0 0 14px;">${tr("accountHint")}</p>
+      <div class="field"><label>${tr("syncEmail")}</label><input id="g-email" type="email" inputmode="email" autocomplete="username" autocapitalize="off"></div>
+      <div class="field"><label>${tr("syncPassword")}</label><input id="g-pass" type="password" autocomplete="current-password"></div>
+      ${msg}
+      <div class="modalfoot">
+        <button class="btn ghost" style="flex:1;" data-action="g-signup">${tr("createAccount")}</button>
+        <button class="btn" style="flex:1;" data-action="g-signin">${tr("signIn")}</button>
+      </div>`;
+  } else {
+    const who = `<p class="fhint" style="margin:0 0 12px;">${tr("syncSignedInAs")} <b>${escapeHtml(authUser.email||"")}</b></p>`;
+    const others = groups.filter(g=>!activeGroup || g.id!==activeGroup.id);
+    const switchList = (others.length || activeGroup) ? `<div class="glabel">${activeGroup ? tr("switchGroup") : tr("yourGroups")}</div>
+      <div class="rlist" style="max-height:none; margin-bottom:6px;">
+        ${others.map(g=>`<div class="ritem" data-action="g-switch" data-gid="${g.id}">👥<div class="rn">${escapeHtml(g.name)}</div></div>`).join("")}
+        ${activeGroup ? `<div class="ritem" data-action="g-personal">📱<div class="rn">${tr("personal")}</div></div>` : ""}
+      </div>` : "";
+    if(activeGroup){
+      html = `<h3><span class="grow">👥 ${escapeHtml(activeGroup.name)}</span>${x}</h3>
+        <div class="gstatus" data-s="${cloudStatus}">${cloudStatusText()}</div>
+        <div class="glabel">${tr("inviteCode")}</div>
+        <div class="gcode">${escapeHtml(activeGroup.invite_code||"")}</div>
+        <button class="btn" style="width:100%;" data-action="g-share">📨 ${tr("shareInvite")}</button>
+        <div class="glabel">${tr("members")} (${members.length})</div>
+        <div class="gmembers">${members.map(m=>`<div class="gmem">${escapeHtml(m.email||"—")}${m.user_id===authUser.id?` <span class="fhint">· ${tr("you")}</span>`:""}</div>`).join("")}</div>
+        ${switchList}
+        ${who}${msg}
+        <div class="modalfoot">
+          <button class="btn ghost danger" data-action="g-leave">${leaveArmed ? tr("leaveConfirm") : tr("leaveGroup")}</button>
+          <div class="grow"></div>
+          <button class="btn ghost" data-action="g-signout">${tr("signOut")}</button>
+        </div>`;
+    } else {
+      html = `<h3><span class="grow">👥 ${tr("account")}</span>${x}</h3>
+        ${who}
+        ${switchList}
+        <div class="glabel">${tr("createGroup")}</div>
+        <div class="ginrow"><input id="g-name" class="pick-search" maxlength="60" placeholder="${tr("groupNamePh")}"><button class="btn" data-action="g-create">${tr("create")}</button></div>
+        <div class="glabel">${tr("joinGroup")}</div>
+        <div class="ginrow"><input id="g-code" class="pick-search" maxlength="12" autocapitalize="characters" autocomplete="off" placeholder="${tr("codePh")}"><button class="btn" data-action="g-join">${tr("join")}</button></div>
+        ${msg}
+        <div class="modalfoot"><div class="grow"></div><button class="btn ghost" data-action="g-signout">${tr("signOut")}</button></div>`;
+    }
+  }
+  openModal(html);
+  Object.keys(keep).forEach(id=>{ const el=document.getElementById(id); if(el) el.value = keep[id]; });
+  if(focusId){ const el = document.getElementById(focusId); if(el){ el.focus(); try{ const n=el.value.length; el.setSelectionRange(n,n); }catch(e){} } }
+}
+function gval(id, raw){ const el = overlay.querySelector("#"+id); return el ? (raw ? el.value : el.value.trim()) : ""; }
 
 /* ------------------------------------------------------------------ */
 /* Root render                                                         */
@@ -1473,14 +1769,16 @@ document.addEventListener("click", e=>{
     case "download-backup": downloadBackup(); break;
     case "copy-export": copyExport(el); break;
     case "do-import": doImport(); break;
-    case "sync": openSyncModal(); break;
-    case "sync-connect": syncConnect(overlay.querySelector("#sync-config").value); break;
-    case "sync-signin": syncAuth(overlay.querySelector("#sync-email").value.trim(), overlay.querySelector("#sync-pass").value, false); break;
-    case "sync-signup": syncAuth(overlay.querySelector("#sync-email").value.trim(), overlay.querySelector("#sync-pass").value, true); break;
-    case "sync-signout": syncSignOut(); break;
-    case "sync-disconnect": syncDisconnect(); break;
-    case "sync-use-cloud": syncMergeChoose(true); break;
-    case "sync-upload-local": syncMergeChoose(false); break;
+    case "group": openGroupModal(); break;
+    case "g-signin": cloudAuth(gval("g-email"), gval("g-pass", true), false); break;
+    case "g-signup": cloudAuth(gval("g-email"), gval("g-pass", true), true); break;
+    case "g-signout": cloudSignOut(); break;
+    case "g-create": createGroup(gval("g-name")); break;
+    case "g-join": joinGroup(gval("g-code")); break;
+    case "g-switch": switchGroup(el.dataset.gid); break;
+    case "g-personal": goPersonal(); break;
+    case "g-share": shareInvite(); break;
+    case "g-leave": if(!leaveArmed){ leaveArmed = true; renderGroupIfOpen(); } else { leaveArmed = false; leaveGroup(); } break;
     case "close": closeModal(); break;
   }
 });
@@ -1524,6 +1822,14 @@ document.addEventListener("input", e=>{
   editing[k] = parseInt(sl.value)||0;
   const v = overlay.querySelector('[data-ratev="'+k+'"]'); if(v) v.textContent = editing[k];
   const badgeEl = overlay.querySelector("#rc-score"); if(badgeEl) badgeEl.innerHTML = scoreBadge(biteScore(editing));
+});
+// Enter submits the account / group forms (handy with the phone keyboard's "Go" key)
+document.addEventListener("keydown", e=>{
+  if(e.key!=="Enter" || !groupModalOpen) return;
+  const id = e.target && e.target.id;
+  if(id==="g-email" || id==="g-pass"){ e.preventDefault(); cloudAuth(gval("g-email"), gval("g-pass", true), false); }
+  else if(id==="g-name"){ e.preventDefault(); createGroup(gval("g-name")); }
+  else if(id==="g-code"){ e.preventDefault(); joinGroup(gval("g-code")); }
 });
 /* Unified pointer drag (mouse + touch + pen):
    - calendar meals between days
@@ -1617,8 +1923,8 @@ document.addEventListener("pointercancel", ()=>{ pdCleanup(); pdrag=null; });
 // close modal when clicking backdrop
 overlay.addEventListener("click", e=>{ if(e.target===overlay) closeModal(); });
 
+cloudBoot();   // restore the household's cached data if signed in before, then connect
 render();
-if(getSyncConfig()) syncInit().catch(function(){ setSyncStatus("error"); });   // auto-reconnect cloud sync
 </script>
 <script>
 // Register the service worker for offline use / installability (PWA).

@@ -302,6 +302,21 @@
   .qa-chip{border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:999px;
     padding:9px 14px; font-size:14px; font-weight:600;}
   .qa-chip:active{background:var(--accent-soft); border-color:var(--accent);}
+  /* arrange mode (per-store layout) */
+  .btn.sm{padding:8px 14px; font-size:14px;}
+  .lay-hint{background:var(--accent-soft); border:1px solid var(--border); border-radius:12px; padding:10px 12px;
+    font-size:13px; line-height:1.4; margin-bottom:14px;}
+  .lay-head .lay-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .lay-head .iconmini{width:32px; height:32px; font-size:13px;}
+  .lay-head .iconmini.armed{width:auto; padding:0 10px; font-size:12px; font-weight:700; background:var(--ns-e); color:#fff; border-color:var(--ns-e);}
+  .lay-empty{font-size:13px; color:var(--muted); padding:12px; border:1px dashed var(--border); border-radius:12px; margin-bottom:6px;}
+  .lay-item{cursor:pointer;}
+  .lay-item:active{background:var(--accent-soft);}
+  .lay-go{flex:none; color:var(--muted); font-size:22px; line-height:1;}
+  .lay-new{width:100%; margin-top:4px;}
+  .emopick{display:grid; grid-template-columns:repeat(auto-fill,minmax(42px,1fr)); gap:6px;}
+  .emo{height:42px; border:1px solid var(--border); background:var(--card); border-radius:10px; font-size:20px; line-height:1;}
+  .emo.sel{border:2px solid var(--accent); background:var(--accent-soft);}
   /* account / household modal */
   .glabel{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin:16px 0 8px;}
   .ginrow{display:flex; gap:8px; align-items:center;}
@@ -460,6 +475,10 @@ const T = {
     tip:"↕ Drag the category headers to match this store's aisle order — it's saved per store.",
     emptyList:"Your shopping list is empty — type above to add something, or add a planned day's ingredients. 🛒",
     addItemPh:"Add to list… e.g. bread", addItemBtn:"Add", addNew:"Add “{x}”", frequent:"Often added",
+    editLayout:"Arrange categories", layoutHint:"Arranging {store}: drag ⠿ to reorder, tap an item to move it. Changes apply to this store only.",
+    newCategory:"＋ New category", editCategory:"Edit category", icon:"Icon", deleteCatConfirm:"Delete?",
+    moveTo:"Move “{x}”", inStore:"In {store}", uncategorized:"Uncategorized",
+    emptyCat:"Empty — tap an item to move it here.", catNameNeeded:"Give the category a name.",
     noRecipes:"No recipes yet.", pickIngredient:"Pick an ingredient",
     confirmDelPlan:"", missing:"missing",
     newIngredient:"+ New ingredient", editIngredient:"Edit ingredient",
@@ -518,6 +537,10 @@ const T = {
     tip:"↕ Povleci naslove kategorij, da se ujemajo z razporedom te trgovine — shrani se za vsako trgovino posebej.",
     emptyList:"Nakupovalni seznam je prazen — vpiši izdelek zgoraj ali dodaj sestavine načrtovanega dne. 🛒",
     addItemPh:"Dodaj na seznam… npr. kruh", addItemBtn:"Dodaj", addNew:"Dodaj „{x}“", frequent:"Pogosto dodano",
+    editLayout:"Uredi kategorije", layoutHint:"Urejaš {store}: povleci ⠿ za vrstni red, dotakni se izdelka, da ga premakneš. Velja samo za to trgovino.",
+    newCategory:"＋ Nova kategorija", editCategory:"Uredi kategorijo", icon:"Ikona", deleteCatConfirm:"Izbrišem?",
+    moveTo:"Premakni „{x}“", inStore:"Trgovina {store}", uncategorized:"Nerazvrščeno",
+    emptyCat:"Prazno — dotakni se izdelka, da ga premakneš sem.", catNameNeeded:"Kategoriji daj ime.",
     noRecipes:"Zaenkrat ni receptov.", pickIngredient:"Izberi sestavino",
     confirmDelPlan:"", missing:"manjka",
     newIngredient:"+ Nova sestavina", editIngredient:"Uredi sestavino",
@@ -585,8 +608,8 @@ function defaultState(){
     list:{ spaghetti:400, mincedbeef:400, tomatosauce:1, onion:1, oliveoil:20, salmon:300, rice:200, broccoli:200, lemon:1 },
     ticked:{},   // ingredientId -> true (checked off this trip)
     stores:[
-      {id:"s1", name:"Spar Center", order:["vegetables","fruit","dairy","meat","grains","pantry","sweets","drinks"]},
-      {id:"s2", name:"Lidl Vič",   order:["drinks","sweets","pantry","grains","meat","dairy","fruit","vegetables"]},
+      {id:"s1", name:"Spar Center", map:{}, cats:["vegetables","fruit","dairy","meat","grains","pantry","sweets","drinks","other"].map(id=>({id}))},
+      {id:"s2", name:"Lidl Vič",   map:{}, cats:["drinks","sweets","pantry","grains","meat","dairy","fruit","vegetables","other"].map(id=>({id}))},
     ],
     storeId:"s1",
     customIng:{},   // user-added ingredients, merged into the catalog at load
@@ -628,7 +651,21 @@ function migrate(s){
     if(typeof r.taste!=="number")  r.taste=5;
     if(typeof r.health!=="number") r.health=5;
   });
+  (s.stores||[]).forEach(ensureStoreLayout);
   return s;
+}
+// Each store keeps its own layout: cats = ordered [{id, name?, emoji?}] (built-ins use the
+// translated label/icon unless renamed), map = {ingredientId: categoryId} placements.
+function ensureStoreLayout(st){
+  if(!st) return st;
+  if(!Array.isArray(st.cats)){
+    const order = Array.isArray(st.order) ? st.order.slice() : CAT_ORDER.slice();
+    CAT_ORDER.forEach(id=>{ if(!order.includes(id)) order.push(id); });
+    st.cats = order.map(id=>({id}));
+  }
+  if(!st.map || typeof st.map!=="object") st.map = {};
+  delete st.order;
+  return st;
 }
 function save(){
   cloudQueue();   // in a shared group: queue changed recipes/days/items for upload (no-op otherwise)
@@ -709,7 +746,7 @@ function clearList(){ state.list = {}; state.ticked = {}; save(); render(); }
 /* Actions                                                             */
 /* ------------------------------------------------------------------ */
 function setView(v){
-  qaOpen = false;
+  qaOpen = false; layoutEdit = false; catArmed = null;
   if(v==="month") state.month = currentMonthStr();   // opening the plan snaps to this month
   state.view=v; closeModal(); save(); render();
 }
@@ -718,12 +755,11 @@ function tickItem(ing){ state.ticked[ing] = true; save(); render(); }        // 
 function untickItem(ing){ delete state.ticked[ing]; save(); render(); }
 function reorderCategory(fromCat, toCat){
   if(fromCat===toCat) return;
-  const store = activeStore();
-  let ord = (store.order||[]).slice();
-  CAT_ORDER.forEach(c=>{ if(!ord.includes(c)) ord.push(c); }); // safety: keep all cats present
-  ord.splice(ord.indexOf(fromCat), 1);
-  ord.splice(ord.indexOf(toCat), 0, fromCat);                  // drop before the target
-  store.order = ord;
+  const cats = ensureStoreLayout(activeStore()).cats;
+  const fi = cats.findIndex(c=>c.id===fromCat); if(fi<0) return;
+  const [moved] = cats.splice(fi, 1);
+  const ti = cats.findIndex(c=>c.id===toCat);
+  if(ti<0) cats.push(moved); else cats.splice(ti, 0, moved);   // drop before the target
   save(); render();
 }
 function assignSlot(slot, recipeId){
@@ -873,9 +909,21 @@ function renderKitchen(){
     ${groups}`;
 }
 
+let layoutEdit = false;        // shopping list "arrange" mode
+let catArmed = null;           // category id waiting for the confirming second tap on delete
+const CAT_EMOJI = ["🥖","🥐","🥩","🍗","🐟","🧀","🥛","🥚","🍎","🥦","🥕","🧊","🍝","🌾","🥫","🧂","🍫","🍪","🥤","🍷","☕","🧴","🧻","🧽","🐶","🍼","🌿","💊","📦","🛒"];
+function storeCatLabel(sc){ if(sc.name) return sc.name; const c = catMeta(sc.id); return c ? c[state.lang] : sc.id; }
+function storeCatEmoji(sc){ if(sc.emoji) return sc.emoji; const c = catMeta(sc.id); return c ? c.emoji : "📦"; }
+function itemCat(store, ing){                  // where an item sits in this store
+  const ids = store.cats.map(c=>c.id);
+  const m = store.map[ing];
+  if(m && ids.includes(m)) return m;
+  const d = ING[ing] && ING[ing].cat;
+  return ids.includes(d) ? d : "_none";
+}
 function shoppingParts(){
   const items = shoppingItems();
-  const store = activeStore();
+  const store = ensureStoreLayout(activeStore());
   const total = items.length;
   const done = items.filter(i=>i.ticked).length;
   const pct = total ? Math.round(done/total*100) : 0;
@@ -883,31 +931,33 @@ function shoppingParts(){
   const storeSel = `<select class="store" data-action="store">
     ${state.stores.map(s=>`<option value="${s.id}" ${s.id===state.storeId?"selected":""}>${escapeHtml(s.name)}</option>`).join("")}
   </select>`;
+  const arrangeBtn = `<button class="iconmini" data-action="layout-edit" title="${tr("editLayout")}" aria-label="${tr("editLayout")}">✎</button>`;
 
+  if(layoutEdit){
+    return {tools:`<div class="shoptools">${storeSel}<div class="grow"></div><button class="btn sm" data-action="layout-done">✓ ${tr("done")}</button></div>`,
+            body: layoutBody(store, items)};
+  }
   if(!total){
-    return {tools:`<div class="shoptools">${storeSel}</div>`, body:`<div class="empty">${tr("emptyList")}</div>`};
+    return {tools:`<div class="shoptools">${storeSel}<div class="grow"></div>${arrangeBtn}</div>`, body:`<div class="empty">${tr("emptyList")}</div>`};
   }
 
-  // store selector + progress bar + clear, one compact row
+  // store selector + progress bar + arrange + clear, one compact row
   const tools = `<div class="shoptools">
     ${storeSel}
     <div class="progressbar"><div class="progressfill" style="width:${pct}%;"></div></div>
     <span class="progresslabel">${done}/${total}</span>
+    ${arrangeBtn}
     <button class="iconmini danger" data-action="clear-list" title="${tr("clearList")}">🗑</button>
   </div>`;
 
-  // group by category
+  // group by this store's layout
   const groups = {};
-  items.forEach(it=>{ const c=ING[it.ing].cat; (groups[c]=groups[c]||[]).push(it); });
-  const rank = c => { const i=(store.order||[]).indexOf(c); return i<0 ? 999 : i; };
-  const cats = Object.keys(groups).sort((a,b)=>{
-    const ra=rank(a), rb=rank(b);
-    return ra===rb ? catLabel(a).localeCompare(catLabel(b)) : ra-rb;
-  });
+  items.forEach(it=>{ const c = itemCat(store, it.ing); (groups[c]=groups[c]||[]).push(it); });
+  const order = store.cats.map(c=>c.id).concat(["_none"]);
 
-  const body = cats.map(cat=>{
-    const meta = catMeta(cat);
-    const list = groups[cat].slice().sort((a,b)=> (a.ticked===b.ticked)?0:(a.ticked?1:-1));
+  const body = order.filter(cid=>groups[cid]).map(cid=>{
+    const sc = store.cats.find(c=>c.id===cid);
+    const list = groups[cid].slice().sort((a,b)=> (a.ticked===b.ticked)?0:(a.ticked?1:-1));
     const rows = list.map(it=>{
       const ing = ING[it.ing];
       return `<div class="sitem ${it.ticked?"done":""}">
@@ -918,17 +968,95 @@ function shoppingParts(){
         <button class="iconmini rm-item" data-action="remove-item" data-ing="${it.ing}" title="${tr("removeItem")}">✕</button>
       </div>`;
     }).join("");
-    return `<div class="catgroup" data-cat="${cat}">
-      <div class="cathead cat-drag" data-cat="${cat}">
-        <span class="draghandle" aria-hidden="true">⠿</span>${meta.emoji} ${meta[state.lang]}
-      </div>${rows}</div>`;
+    const head = sc
+      ? `<div class="cathead cat-drag" data-cat="${cid}"><span class="draghandle" aria-hidden="true">⠿</span>${storeCatEmoji(sc)} ${escapeHtml(storeCatLabel(sc))}</div>`
+      : `<div class="cathead">📦 ${tr("uncategorized")}</div>`;
+    return `<div class="catgroup" data-cat="${cid}">${head}${rows}</div>`;
   }).join("");
 
   return {tools, body};
 }
+
+/* Arrange mode: every category of this store (even empty), rename/delete, tap an item to move it */
+function layoutBody(store, items){
+  const groups = {};
+  items.forEach(it=>{ const c = itemCat(store, it.ing); (groups[c]=groups[c]||[]).push(it); });
+  const row = it=>{
+    const ing = ING[it.ing];
+    return `<div class="sitem lay-item" data-action="move-item" data-ing="${it.ing}">
+      ${badge(ing.ns, true)}<div class="sname">${escapeHtml(nameOf(ing.name))}</div><span class="lay-go">›</span>
+    </div>`;
+  };
+  const sections = store.cats.map(sc=>{
+    const list = groups[sc.id] || [];
+    const armed = catArmed===sc.id;
+    return `<div class="catgroup" data-cat="${sc.id}">
+      <div class="cathead cat-drag lay-head" data-cat="${sc.id}">
+        <span class="draghandle" aria-hidden="true">⠿</span>
+        <span class="lay-name">${storeCatEmoji(sc)} ${escapeHtml(storeCatLabel(sc))}</span>
+        <button class="iconmini" data-action="cat-edit" data-cat="${sc.id}" title="${tr("editCategory")}">✎</button>
+        <button class="iconmini danger${armed?" armed":""}" data-action="cat-del" data-cat="${sc.id}" title="${tr("del")}">${armed ? tr("deleteCatConfirm") : "✕"}</button>
+      </div>
+      ${list.length ? list.map(row).join("") : `<div class="lay-empty">${tr("emptyCat")}</div>`}
+    </div>`;
+  }).join("");
+  const none = groups["_none"]
+    ? `<div class="catgroup" data-cat="_none"><div class="cathead">📦 ${tr("uncategorized")}</div>${groups["_none"].map(row).join("")}</div>` : "";
+  return `<div class="lay-hint">${tr("layoutHint").replace("{store}", "<b>"+escapeHtml(store.name)+"</b>")}</div>
+    ${sections}${none}
+    <button class="btn ghost lay-new" data-action="cat-new">${tr("newCategory")}</button>`;
+}
+function openMoveItem(ing){
+  const store = ensureStoreLayout(activeStore()), cur = itemCat(store, ing);
+  const rows = store.cats.map(sc=>`<div class="ritem" data-action="move-to" data-ing="${ing}" data-cat="${sc.id}">
+      <span class="pick-cat">${storeCatEmoji(sc)}</span><div class="rn">${escapeHtml(storeCatLabel(sc))}</div>${sc.id===cur ? `<span class="qa-on">✓</span>` : ""}
+    </div>`).join("");
+  openModal(`<h3><span class="grow">${escapeHtml(tr("moveTo").replace("{x}", nameOf(ING[ing].name)))}</span><button class="modal-x" data-action="close" aria-label="${tr("cancel")}">✕</button></h3>
+    <p class="fhint" style="margin:0 0 10px;">${escapeHtml(tr("inStore").replace("{store}", store.name))}</p>
+    <div class="rlist">${rows}</div>
+    <button class="btn ghost" style="width:100%; margin-top:10px;" data-action="cat-new" data-ing="${ing}">${tr("newCategory")}</button>`);
+}
+let catEdit = null;            // {id|null, name, emoji, moveIng}
+function openCatEditor(id, moveIng){
+  const sc = id ? ensureStoreLayout(activeStore()).cats.find(c=>c.id===id) : null;
+  catEdit = {id: sc ? sc.id : null, name: sc ? storeCatLabel(sc) : "", emoji: sc ? storeCatEmoji(sc) : "📦", moveIng: moveIng || null, msg:""};
+  renderCatEditor();
+}
+function renderCatEditor(){
+  const emo = CAT_EMOJI.map(e=>`<button class="emo${catEdit.emoji===e?" sel":""}" data-action="cat-emoji" data-e="${e}">${e}</button>`).join("");
+  openModal(`<h3><span class="grow">${catEdit.id ? tr("editCategory") : tr("newCategory").replace(/^＋\s*/,"")}</span><button class="modal-x" data-action="close" aria-label="${tr("cancel")}">✕</button></h3>
+    <p class="fhint" style="margin:0 0 10px;">${escapeHtml(tr("inStore").replace("{store}", activeStore().name))}</p>
+    <div class="field"><label>${tr("name")}</label><input id="cat-name" type="text" maxlength="30" value="${escapeHtml(catEdit.name)}"></div>
+    <div class="field"><label>${tr("icon")}</label><div class="emopick">${emo}</div></div>
+    ${catEdit.msg ? `<div class="gmsg">${escapeHtml(catEdit.msg)}</div>` : ""}
+    <div class="modalfoot"><div class="grow"></div><button class="btn" data-action="cat-save">${tr("save")}</button></div>`);
+}
+function saveCategory(){
+  const el = overlay.querySelector("#cat-name");
+  const name = (el ? el.value : catEdit.name).trim();
+  if(!name){ catEdit.msg = tr("catNameNeeded"); renderCatEditor(); return; }
+  const store = ensureStoreLayout(activeStore());
+  let id = catEdit.id;
+  const sc = id && store.cats.find(c=>c.id===id);
+  if(sc){                                      // keep built-in translations unless actually renamed
+    if(name !== storeCatLabel(sc)) sc.name = name;
+    if(catEdit.emoji !== storeCatEmoji(sc)) sc.emoji = catEdit.emoji;
+  } else {
+    id = "k"+Date.now().toString(36)+Math.floor(Math.random()*1e3).toString(36);
+    store.cats.push({id, name, emoji:catEdit.emoji});
+  }
+  if(catEdit.moveIng) store.map[catEdit.moveIng] = id;
+  catEdit = null; closeModal(); save(); render();
+}
+function deleteCategory(id){
+  const store = ensureStoreLayout(activeStore());
+  store.cats = store.cats.filter(c=>c.id!==id);
+  Object.keys(store.map).forEach(k=>{ if(store.map[k]===id) delete store.map[k]; });
+  catArmed = null; save(); render();
+}
 function renderShopping(){
   const p = shoppingParts();
-  return `<div id="shop-top">${p.tools}</div>${qaBarHTML()}<div id="shop-body">${p.body}</div>`;
+  return `<div id="shop-top">${p.tools}</div>${layoutEdit ? "" : qaBarHTML()}<div id="shop-body">${p.body}</div>`;
 }
 
 /* Quick add: type an item (or pick a suggestion) to put it on the list.
@@ -1829,6 +1957,7 @@ document.addEventListener("click", e=>{
   const el = e.target.closest("[data-action]");
   if(!el) return;
   const a = el.dataset.action;
+  if(catArmed && a!=="cat-del"){ catArmed = null; if(layoutEdit && state.view==="shopping") render(); }
   switch(a){
     case "view": setView(el.dataset.view); break;
     case "menu": menuOpen=!menuOpen; document.getElementById("menu").classList.toggle("open", menuOpen); break;
@@ -1888,6 +2017,15 @@ document.addEventListener("click", e=>{
     case "g-share": shareInvite(); break;
     case "g-leave": if(!leaveArmed){ leaveArmed = true; renderGroupIfOpen(); } else { leaveArmed = false; leaveGroup(); } break;
     case "qa-pick": qaAddIng(el.dataset.ing); break;
+    case "layout-edit": layoutEdit = true; render(); window.scrollTo(0,0); break;
+    case "layout-done": layoutEdit = false; catArmed = null; render(); break;
+    case "move-item": openMoveItem(el.dataset.ing); break;
+    case "move-to": ensureStoreLayout(activeStore()).map[el.dataset.ing] = el.dataset.cat; closeModal(); save(); render(); break;
+    case "cat-new": openCatEditor(null, el.dataset.ing); break;
+    case "cat-edit": openCatEditor(el.dataset.cat); break;
+    case "cat-emoji": { const n = overlay.querySelector("#cat-name"); if(n) catEdit.name = n.value; catEdit.emoji = el.dataset.e; renderCatEditor(); break; }
+    case "cat-save": saveCategory(); break;
+    case "cat-del": if(catArmed===el.dataset.cat) deleteCategory(el.dataset.cat); else { catArmed = el.dataset.cat; render(); } break;
     case "qa-add": qaSubmit(); break;
     case "close": closeModal(); break;
   }
@@ -1902,6 +2040,7 @@ document.addEventListener("focusout", e=>{
   if(e.target.closest && (e.target.closest(".qs-item") || e.target.closest(".qa-btn"))) e.preventDefault();
 }));
 document.addEventListener("keydown", e=>{
+  if(e.target.id==="cat-name" && e.key==="Enter"){ e.preventDefault(); saveCategory(); return; }
   if(e.target.id!=="qa-input") return;
   if(e.key==="Enter"){ e.preventDefault(); qaSubmit(); }
   else if(e.key==="Escape"){ e.target.blur(); }

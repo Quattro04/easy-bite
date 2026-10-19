@@ -284,6 +284,24 @@
   .pick-chip.active{background:var(--accent); color:#fff; border-color:var(--accent);}
   .pick-metric{flex:none; font-weight:700; font-size:15px; color:var(--accent); min-width:22px; text-align:right;}
   .pick-cat{flex:none; font-size:16px;}
+  /* shopping quick add */
+  .qa{margin-bottom:14px;}
+  .qa-row{display:flex; gap:8px;}
+  .qa-row .pick-search{margin:0; flex:1; min-width:0;}
+  .qa-btn{flex:none; width:48px; padding:0; font-size:24px; line-height:1;}
+  .qa-list{margin-top:6px; border:1px solid var(--border); border-radius:12px; background:var(--card); overflow:hidden;}
+  .qa-item{display:flex; align-items:center; gap:10px; padding:13px 12px; border-bottom:1px solid var(--border); cursor:pointer;}
+  .qa-item:last-child{border-bottom:none;}
+  .qa-item:active{background:var(--accent-soft);}
+  .qa-name{flex:1; font-weight:600;}
+  .qa-cat{flex:none; font-size:16px;}
+  .qa-on{flex:none; color:var(--ns-a); font-weight:700;}
+  .qa-new{color:var(--accent); font-weight:700;}
+  .qa-label{font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin:12px 0 8px;}
+  .qa-chips{display:flex; flex-wrap:wrap; gap:6px;}
+  .qa-chip{border:1px solid var(--border); background:var(--card); color:var(--text); border-radius:999px;
+    padding:9px 14px; font-size:14px; font-weight:600;}
+  .qa-chip:active{background:var(--accent-soft); border-color:var(--accent);}
   /* account / household modal */
   .glabel{font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.4px; margin:16px 0 8px;}
   .ginrow{display:flex; gap:8px; align-items:center;}
@@ -356,6 +374,7 @@ const CATS = [
   {id:"pantry",     emoji:"🫙", en:"Staples",          sl:"Osnovna živila"},
   {id:"sweets",     emoji:"🍫", en:"Sweets & snacks",  sl:"Sladkarije in prigrizki"},
   {id:"drinks",     emoji:"🥤", en:"Drinks",           sl:"Pijače"},
+  {id:"other",      emoji:"🧺", en:"Other",            sl:"Ostalo"},
 ];
 const CAT_ORDER = CATS.map(c=>c.id);
 
@@ -439,7 +458,8 @@ const T = {
     changeMeal:"Change", removeItem:"Remove", clearList:"Clear list",
     addedToList:"✓ Added {n} ingredients to the shopping list.",
     tip:"↕ Drag the category headers to match this store's aisle order — it's saved per store.",
-    emptyList:"Your shopping list is empty — open a planned day and tap “Add to shopping list”. 🛒",
+    emptyList:"Your shopping list is empty — type above to add something, or add a planned day's ingredients. 🛒",
+    addItemPh:"Add to list… e.g. bread", addItemBtn:"Add", addNew:"Add “{x}”", frequent:"Often added",
     noRecipes:"No recipes yet.", pickIngredient:"Pick an ingredient",
     confirmDelPlan:"", missing:"missing",
     newIngredient:"+ New ingredient", editIngredient:"Edit ingredient",
@@ -496,7 +516,8 @@ const T = {
     changeMeal:"Zamenjaj", removeItem:"Odstrani", clearList:"Počisti seznam",
     addedToList:"✓ Dodano {n} sestavin na nakupovalni seznam.",
     tip:"↕ Povleci naslove kategorij, da se ujemajo z razporedom te trgovine — shrani se za vsako trgovino posebej.",
-    emptyList:"Nakupovalni seznam je prazen — odpri načrtovan dan in pritisni “Dodaj na nakupovalni seznam”. 🛒",
+    emptyList:"Nakupovalni seznam je prazen — vpiši izdelek zgoraj ali dodaj sestavine načrtovanega dne. 🛒",
+    addItemPh:"Dodaj na seznam… npr. kruh", addItemBtn:"Dodaj", addNew:"Dodaj „{x}“", frequent:"Pogosto dodano",
     noRecipes:"Zaenkrat ni receptov.", pickIngredient:"Izberi sestavino",
     confirmDelPlan:"", missing:"manjka",
     newIngredient:"+ Nova sestavina", editIngredient:"Uredi sestavino",
@@ -688,6 +709,7 @@ function clearList(){ state.list = {}; state.ticked = {}; save(); render(); }
 /* Actions                                                             */
 /* ------------------------------------------------------------------ */
 function setView(v){
+  qaOpen = false;
   if(v==="month") state.month = currentMonthStr();   // opening the plan snaps to this month
   state.view=v; closeModal(); save(); render();
 }
@@ -851,7 +873,7 @@ function renderKitchen(){
     ${groups}`;
 }
 
-function renderShopping(){
+function shoppingParts(){
   const items = shoppingItems();
   const store = activeStore();
   const total = items.length;
@@ -863,7 +885,7 @@ function renderShopping(){
   </select>`;
 
   if(!total){
-    return `<div class="shoptools">${storeSel}</div><div class="empty">${tr("emptyList")}</div>`;
+    return {tools:`<div class="shoptools">${storeSel}</div>`, body:`<div class="empty">${tr("emptyList")}</div>`};
   }
 
   // store selector + progress bar + clear, one compact row
@@ -902,7 +924,82 @@ function renderShopping(){
       </div>${rows}</div>`;
   }).join("");
 
-  return `${tools}${body}`;
+  return {tools, body};
+}
+function renderShopping(){
+  const p = shoppingParts();
+  return `<div id="shop-top">${p.tools}</div>${qaBarHTML()}<div id="shop-body">${p.body}</div>`;
+}
+
+/* Quick add: type an item (or pick a suggestion) to put it on the list.
+   Anything new becomes a reusable catalog item in "Other", so it's suggested next time. */
+let qaText = "", qaOpen = false;
+const QA_USE = "easybite.quickuse";              // per-device: how often each item was added
+function qaNorm(x){ return String(x||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().trim(); }
+function qaFindExact(q){
+  return Object.keys(ING).find(id=>qaNorm(ING[id].name.en)===q || qaNorm(ING[id].name.sl)===q) || null;
+}
+function qaBarHTML(){
+  return `<div class="qa">
+    <div class="qa-row">
+      <input id="qa-input" class="pick-search" type="text" autocomplete="off" autocapitalize="sentences" enterkeyhint="done"
+        placeholder="${tr("addItemPh")}" value="${escapeHtml(qaText)}">
+      <button class="btn qa-btn" data-action="qa-add" aria-label="${tr("addItemBtn")}">＋</button>
+    </div>
+    <div id="qa-sugg">${qaOpen ? qaSuggHTML() : ""}</div>
+  </div>`;
+}
+function qaSuggHTML(){
+  const q = qaNorm(qaText);
+  const use = readKey(QA_USE) || {};
+  if(!q){                                      // empty box: one-tap chips of the usual items
+    const top = Object.keys(use).filter(id=>ING[id]).sort((a,b)=>use[b]-use[a]).slice(0,10);
+    if(!top.length) return "";
+    return `<div class="qa-label">${tr("frequent")}</div><div class="qa-chips">${
+      top.map(id=>`<button class="qa-chip qs-item" data-action="qa-pick" data-ing="${id}">${escapeHtml(nameOf(ING[id].name))}</button>`).join("")}</div>`;
+  }
+  const hits = Object.keys(ING).map(id=>{
+    const mine = qaNorm(nameOf(ING[id].name)), both = qaNorm(ING[id].name.en)+" "+qaNorm(ING[id].name.sl);
+    const rank = mine.startsWith(q) ? 3 : (both.startsWith(q) || both.includes(" "+q)) ? 2 : both.includes(q) ? 1 : 0;
+    return rank ? {id, score: rank*1000 + (use[id]||0)} : null;
+  }).filter(Boolean).sort((a,b)=>b.score-a.score).slice(0,6);
+  const rows = hits.map(h=>{
+    const ing = ING[h.id];
+    return `<div class="qa-item qs-item" data-action="qa-pick" data-ing="${h.id}">
+      ${badge(ing.ns, true)}<span class="qa-name">${escapeHtml(nameOf(ing.name))}</span>
+      ${(h.id in state.list) && !state.ticked[h.id] ? `<span class="qa-on">✓</span>` : ""}
+      <span class="qa-cat">${catMeta(ing.cat).emoji}</span>
+    </div>`;
+  }).join("");
+  const create = qaFindExact(q) ? "" :
+    `<div class="qa-item qa-new qs-item" data-action="qa-add">＋ ${escapeHtml(tr("addNew").replace("{x}", qaText.trim()))}</div>`;
+  return `<div class="qa-list">${rows}${create}</div>`;
+}
+function qaRefresh(){ const el = document.getElementById("qa-sugg"); if(el) el.innerHTML = qaOpen ? qaSuggHTML() : ""; }
+function qaCreate(text){
+  let name = text.trim().replace(/\s+/g, " ").slice(0, 40);
+  name = name.charAt(0).toUpperCase() + name.slice(1);
+  const id = "c"+Date.now().toString(36)+Math.floor(Math.random()*1e4).toString(36);
+  const ing = {name:{en:name, sl:name}, cat:"other", unit:"pcs", g:100, ns:null, custom:true};
+  ING[id] = ing; state.customIng[id] = ing;
+  return id;
+}
+function qaAddIng(id){
+  if(!ING[id]) return;
+  const u = ING[id].unit, step = (u==="g" || u==="ml") ? 100 : 1;
+  if(state.ticked[id]){ state.list[id] = step; delete state.ticked[id]; }   // bought last time → fresh entry
+  else state.list[id] = (state.list[id]||0) + step;
+  const use = readKey(QA_USE) || {}; use[id] = (use[id]||0) + 1; writeKey(QA_USE, use);
+  qaText = ""; qaOpen = true;
+  const el = document.getElementById("qa-input"); if(el) el.value = "";
+  save(); render();
+  const again = document.getElementById("qa-input");
+  if(again && document.activeElement !== again) again.focus();          // keep adding without re-tapping
+}
+function qaSubmit(){
+  const text = qaText.trim();
+  if(!text) return;
+  qaAddIng(qaFindExact(qaNorm(text)) || qaCreate(text));
 }
 
 /* ------------------------------------------------------------------ */
@@ -1157,7 +1254,7 @@ function saveIngredient(){
   const name = (editingIng.name||"").trim();
   if(!name){ const el=overlay.querySelector("#ing-name"); if(el){ el.style.borderColor="var(--ns-e)"; el.focus(); } return; }
   const g = editingIng.g>0 ? editingIng.g : defaultG(editingIng.unit);
-  const ns = editingIng.ns || "C";
+  const ns = editingIng.ns || null;
   if(editingIng.id){
     const ing = ING[editingIng.id];
     ing.name = {en:name, sl:name}; ing.cat = editingIng.cat; ing.unit = editingIng.unit; ing.g = g; ing.ns = ns;
@@ -1709,7 +1806,15 @@ function render(){
   if(state.view==="month") app.innerHTML = renderMonth();
   else if(state.view==="recipes") app.innerHTML = renderRecipes();
   else if(state.view==="kitchen") app.innerHTML = renderKitchen();
-  else if(state.view==="shopping") app.innerHTML = renderShopping();
+  else if(state.view==="shopping"){
+    const typing = document.activeElement && document.activeElement.id==="qa-input" && document.getElementById("shop-body");
+    if(typing){                                // don't replace the focused input (keeps the phone keyboard open)
+      const p = shoppingParts();
+      document.getElementById("shop-top").innerHTML = p.tools;
+      document.getElementById("shop-body").innerHTML = p.body;
+      qaRefresh();
+    } else app.innerHTML = renderShopping();
+  }
 }
 
 /* ------------------------------------------------------------------ */
@@ -1782,8 +1887,24 @@ document.addEventListener("click", e=>{
     case "g-personal": goPersonal(); break;
     case "g-share": shareInvite(); break;
     case "g-leave": if(!leaveArmed){ leaveArmed = true; renderGroupIfOpen(); } else { leaveArmed = false; leaveGroup(); } break;
+    case "qa-pick": qaAddIng(el.dataset.ing); break;
+    case "qa-add": qaSubmit(); break;
     case "close": closeModal(); break;
   }
+});
+// quick add box: live suggestions, Enter to add, keep focus when tapping a suggestion
+document.addEventListener("focusin", e=>{ if(e.target.id==="qa-input"){ qaOpen = true; qaRefresh(); } });
+document.addEventListener("focusout", e=>{
+  if(e.target.id!=="qa-input") return;
+  setTimeout(()=>{ const a=document.activeElement; if(!a || a.id!=="qa-input"){ qaOpen = false; qaRefresh(); } }, 300);
+});
+["pointerdown","mousedown"].forEach(t=>document.addEventListener(t, e=>{
+  if(e.target.closest && (e.target.closest(".qs-item") || e.target.closest(".qa-btn"))) e.preventDefault();
+}));
+document.addEventListener("keydown", e=>{
+  if(e.target.id!=="qa-input") return;
+  if(e.key==="Enter"){ e.preventDefault(); qaSubmit(); }
+  else if(e.key==="Escape"){ e.target.blur(); }
 });
 // live score update while typing / changing ingredients in recipe modal
 document.addEventListener("change", e=>{
@@ -1814,6 +1935,7 @@ document.addEventListener("input", e=>{
     const lst = document.getElementById("pick-list"); if(lst) lst.innerHTML = pickListHTML();
     return;
   }
+  if(e.target.id==="qa-input"){ qaText = e.target.value; qaOpen = true; qaRefresh(); return; }
   if(e.target.id==="ingp-search"){
     ingPickQ = e.target.value;
     const lst = document.getElementById("ingp-list"); if(lst) lst.innerHTML = recipeIngListHTML();

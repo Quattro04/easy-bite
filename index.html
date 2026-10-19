@@ -969,7 +969,7 @@ function shoppingParts(){
       </div>`;
     }).join("");
     const head = sc
-      ? `<div class="cathead cat-drag" data-cat="${cid}"><span class="draghandle" aria-hidden="true">⠿</span>${storeCatEmoji(sc)} ${escapeHtml(storeCatLabel(sc))}</div>`
+      ? `<div class="cathead">${storeCatEmoji(sc)} ${escapeHtml(storeCatLabel(sc))}</div>`
       : `<div class="cathead">📦 ${tr("uncategorized")}</div>`;
     return `<div class="catgroup" data-cat="${cid}">${head}${rows}</div>`;
   }).join("");
